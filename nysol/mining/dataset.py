@@ -147,6 +147,7 @@ class Sequence(object):
 				self.data.append([sid,[]]) # データにidがないので追加
 				#self.data.append((idList[idList_i],[])) # データにidがないので追加
 				idList_i+=1
+
 			# この条件(idListにないsampleID)はありえないはずだがエラーとせずスキップさせる
 			if sid<idList[idList_i]:
 				continue
@@ -163,6 +164,11 @@ class Sequence(object):
 					prevTime=time
 				items.append(line[2])
 				self.alpha2num.add(line[2])
+
+			if len(items) != 0:
+				seq.append([prevTime,items])
+			
+
 			self.data.append([sid,seq])
 			#self.data.append((idList[idList_i],items))
 			idList_i+=1

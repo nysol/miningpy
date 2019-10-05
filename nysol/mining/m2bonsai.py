@@ -59,6 +59,7 @@ class AlphabetIndex(object):
 
 
 	def enumSeqpatterns(self,name,data) :
+
 		datas={name:data}
 		iParams={ "iData":datas }
 		eParams={
@@ -170,6 +171,8 @@ class AlphabetIndex(object):
 
 
 		for i, sequence in enumerate(self.ds.sequences):
+			#print(sequence.data)
+			#print("----------")
 
 			indexedSequence=[]
 			for elements in sequence.data:
@@ -199,13 +202,25 @@ class AlphabetIndex(object):
 
 				if len(v[0]) == 0: # これこれでいい？
 					continue
+					
+				# 応急処置
+				pidstk =[]
 
-				self.sequenceIndex.append(np.zeros((self.ds.sampleSize,len(v[1]))))
+				pre = None
+				for vv in v[2]: # ['c2', 0, '752']
+					if pre != vv[1]:
+						pidstk.append(vv[1]) 
+					pre = vv[1]
+				
+
+				self.sequenceIndex.append(np.zeros((self.ds.sampleSize,len(pidstk))))
+
 				pre = v[2][0][1]
 				pos=0
 				for vv in v[2]: # ['c2', 0, '752']
 					if pre != vv[1]:
 						pos+=1 
+
 					self.sequenceIndex[-1][idmap[vv[2]]][pos] = 1.0
 					pre = vv[1]
 
@@ -214,7 +229,19 @@ class AlphabetIndex(object):
 				pre2 = v[0][0][2]
 				fstr = ""
 
+				#もちょっと考える
+				skip=False
 				for vv1 in v[0]: 
+
+					if not vv1[1] in pidstk :
+						skip=True
+						continue
+
+					if skip :
+						pre1 = vv1[1]
+						pre2 = vv1[2]
+						skip=False
+						
 			
 					if pre1 != vv1[1]:
 						self.sequenceIndexfeatures.append("%s_%s"%(name,fstr))
@@ -227,7 +254,7 @@ class AlphabetIndex(object):
 					fstr += "[" + ",".join(sfstk[int(vv1[3])]) + "]"
 	
 				self.sequenceIndexfeatures.append("%s_%s"%(name,fstr))
-					
+				print(len(pidstk),pos,len(self.sequenceIndexfeatures))
 
 			base_i+=sequence.aSize
 
