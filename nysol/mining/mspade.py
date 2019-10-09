@@ -279,10 +279,10 @@ class Lattice:
 					item2=seq[j][0]
 					time2=seq[j][1]
 					token=1
-					if eParams["minGap"]!=None and time2-time1<eParams["minGap"]:
-						continue
-					if eParams["maxGap"]!=None and time2-time1>eParams["maxGap"]:
-						continue
+					#if eParams["minGap"]!=None and time2-time1<eParams["minGap"]:
+					#	continue
+					#if eParams["maxGap"]!=None and time2-time1>eParams["maxGap"]:
+					#	continue
 					if time1==time2:
 						token=2
 					if item1 not in counter:
