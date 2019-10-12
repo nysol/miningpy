@@ -790,26 +790,63 @@ class Spade:
 		if "rule" in self.oParams and self.oParams["rule"]==None:
 			pass
 		else:
+			sigleFlag = False
+			if len(rules) == 1:
+				sigleFlag = True
+
 			oCSVpats=None
 			oCSVstats=None
 			oCSVoccs=None
-			if oParams["oPats"]!=None:
-				oCSVpats=mcsvout(f="class,pid,eid,item",o=oParams["oPats"])
-			if "oStats" in self.oParams and oParams["oStats"]!=None:
-				oCSVstats=mcsvout(f="class,pid,size,length,frequency,freqOther,pprob",o=oParams["oStats"])
-			if oParams["oOccs"]!=None:
-				oCSVoccs=mcsvout(f="class,pid,sid",o=oParams["oOccs"])
+			
+			if sigleFlag:
+				if oParams["oPats"]!=None:
+					oCSVpats=mcsvout(f="pid,eid,item",o=oParams["oPats"])
+				if "oStats" in self.oParams and oParams["oStats"]!=None:
+					oCSVstats=mcsvout(f="pid,size,length,frequency",o=oParams["oStats"])
+				if oParams["oOccs"]!=None:
+					oCSVoccs=mcsvout(f="pid,sid",o=oParams["oOccs"])
 
-			for eachRule in rules.values():
-				if oCSVpats!=None:
-					for line in eachRule[0]:
-						oCSVpats.write(line)
-				if oCSVstats!=None:
-					for line in eachRule[1]:
-						oCSVstats.write(line)
-				if oCSVoccs!=None:
-					for line in eachRule[2]:
-						oCSVoccs.write(line)
+					for eachRule in rules.values():
+	
+						if oCSVpats!=None:
+							for line in eachRule[0]:
+								oCSVpats.write(line[1:])
+
+
+						if oCSVstats!=None:
+							for line in eachRule[1]:
+								oCSVstats.write(line[1:5])
+
+						if oCSVoccs!=None:
+							for line in eachRule[2]:
+								oCSVoccs.write(line[1:])
+			
+			
+			else :
+				if oParams["oPats"]!=None:
+					oCSVpats=mcsvout(f="class,pid,eid,item",o=oParams["oPats"])
+				if "oStats" in self.oParams and oParams["oStats"]!=None:
+					oCSVstats=mcsvout(f="class,pid,size,length,frequency,freqOther,pprob",o=oParams["oStats"])
+				if oParams["oOccs"]!=None:
+					oCSVoccs=mcsvout(f="class,pid,sid",o=oParams["oOccs"])
+
+				
+				for eachRule in rules.values():
+
+					if oCSVpats!=None:
+						for line in eachRule[0]:
+							oCSVpats.write(line)
+
+
+					if oCSVstats!=None:
+						for line in eachRule[1]:
+							oCSVstats.write(line)
+
+					if oCSVoccs!=None:
+						for line in eachRule[2]:
+							oCSVoccs.write(line)
+
+
 
 			if oCSVpats!=None:
 				oCSVpats.close()
