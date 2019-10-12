@@ -5,11 +5,12 @@ import sys
 import re
 import nysol.util.margs as margs
 import nysol.mining.mspade as mm
+from nysol.util.mmkdir import mkDir
 
 helpMSG="""
 概要) 
 内容) 
-書式) mspade.py i= f= [c=] [cf=] [minSup=|minSupProb=] [maxSize=] 
+書式) mspade.py i= f= O= [c=] [cf=] [minSup=|minSupProb=] [maxSize=] 
                 [maxLen=] [minGap=] [maxGap=] [maxWin=] 
                 ["topk=] [minSize=] [minLen=] [maxSup=] [minPprob=] 
                 [oPats=] [oStats=] [oOccs=] [-maximal] [-help]
@@ -34,9 +35,7 @@ helpMSG="""
     minLen=
     maxSup=
     minPprob=
-    oPats=
-    oStats=
-    oOccs=
+    O=
 
   その他
     -help : ヘルプの表示(2)
@@ -47,12 +46,15 @@ helpMSG="""
 # Copyright(c) NYSOL 2012- All Rights Reserved.
 		"""
 
+#    oPats=
+#    oStats=
+#    oOccs=
 
 
 paraList=[
 	["i=","f=","c=","cf="] ,# ipara
 	["minSup=","minSupProb=","maxSize=","maxLen=","minGap=","maxGap=","maxWin="] ,# epara
-	["-maximal","topk=","minSize=","minLen=","maxSup=","minPprob=","oPats=","oStats=","oOccs="] # opara
+	["-maximal","O=","topk=","minSize=","minLen=","maxSup=","minPprob="] # opara
 ]
 paraType={
 	"i=":"str",
@@ -74,7 +76,8 @@ paraType={
 	"minPprob=":"float",
 	"oPats=":"str",
 	"oStats=":"str",
-	"oOccs=":"str"
+	"oOccs=":"str",
+	"O=":"str"
 }
 
 
@@ -155,10 +158,20 @@ for p in paraList[2] :
 	elif paraType[p] == "bool":
 		val = args.bool(p)	
 
+		
 	if p in paraconvList :
 		oParams[paraconvList[p]] = val
 	else:
-		oParams[re.sub(r'=$',"",p)] = val
+		if p == "O=":
+			# Oは　oPats= oStats= oOccs=に分割
+			# pattern.csv、stat.csv、occurence.csv
+			mkDir(val) 
+			valD = re.sub(r'/$',"",val)
+			oParams["oPats"]= "%s/%s"%(valD,"pattern.csv")
+			oParams["oStats"]= "%s/%s"%(valD,"stat.csv")
+			oParams["oOccs"]= "%s/%s"%(valD,"occurence.csv")
+		else:
+			oParams[re.sub(r'=$',"",p)] = val
 
 
 spade=mm.Spade(iParams,eParams,oParams)
