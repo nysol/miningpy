@@ -279,10 +279,10 @@ class Lattice:
 					item2=seq[j][0]
 					time2=seq[j][1]
 					token=1
-					#if eParams["minGap"]!=None and time2-time1<eParams["minGap"]:
-					#	continue
-					#if eParams["maxGap"]!=None and time2-time1>eParams["maxGap"]:
-					#	continue
+					if eParams["minGap"]!=None and time2-time1<eParams["minGap"]:
+						continue
+					if eParams["maxGap"]!=None and time2-time1>eParams["maxGap"]:
+						continue
 					if time1==time2:
 						token=2
 					if item1 not in counter:
@@ -689,36 +689,7 @@ def readCSV(iParams):
 		#exit()
 	return datas
 
-'''
-def writeRdata(data,roFile):
-	# R用データファイルの出力(sid,eid,サイズ,items)
-	# 1 10 2 C D
-	# 1 15 3 A B C
-	# 1 20 3 A B F
-	if roFile!=None:
-		with open(roFile,"w") as fpw:
-			for i in range(len(data)):
-				sid=data[i][0]
-				elements=data[i][1]
-				for j in range(len(elements)):
-					eid=elements[j][0]
-					element=elements[j][1]
-					#print(element)
-					#print(sid,eid,len(element)," ".join(element))
-					fpw.write("%s %d %d %s\n"%(sid,eid,len(element)," ".join(element)))
-'''
 
-def diff(patR,patP):
-	f=None
-	f<<=nm.mselstr(f="pattern",v="{}",r=True,i=patP)
-	f<<=nm.msortf(f="pattern,frequency",o="xxp")
-	f.run()
-	f=None
-	f<<=nm.mselstr(f="pattern",v="{}",r=True,i=patR)
-	f<<=nm.msortf(f="pattern,frequency",o="xxr")
-	f.run()
-	# print("### diff xxp xxr")
-	os.system("diff xxp xxr")
 
 class Spade:
 
@@ -1035,7 +1006,7 @@ if __name__ == '__main__':
 		"useR":True,       # Rのcspadeを使って計算する(class指定は使えない)
 		"minSup":2,        # 最小サポート(件数)
 		"minSupProb":None, # 最小サポート(確率) minSupがNoneでなければminSup優先
-		"maxSize":4,       # パターンを構成する総アイテム数の上限
+		"maxSize":4,       # パターンを構成する総アイテム数の上限 # Noneはなし
 		"maxLen":3,        # パターンを構成する総エレメント数の上限
 		"minGap":None,     # エレメント間最小ギャップ長
 		"maxGap":None,     # エレメント間最大ギャップ長

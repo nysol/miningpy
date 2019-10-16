@@ -38,6 +38,7 @@ class AlphabetIndex(object):
 	# spcacesはbayes最適化探索空間で使われる一次元ベクトルなので、
 	# 変数×値別にindexSizeをフラットに設定する
 	def setSpaces(self,ds):
+
 		self.ds=ds
 
 		# item変数
@@ -54,7 +55,7 @@ class AlphabetIndex(object):
 		for sequence in self.ds.sequences:
 			for _ in range(sequence.aSize):
 				self.spaces.append(list(range(sequence.iSize))) # bayes最適化探索空間
-		#print(len(self.spaces))
+
 
 
 
@@ -111,7 +112,7 @@ class AlphabetIndex(object):
 	# D         index化       0   dummy化  1    0    0
   #
 	def indexing(self,spaces):
-		#print(spaces)
+
 		# spaces上の現変数の開始位置
 		# 変数,値の2次元空間を、spacesでは1次元空間に設定しているため(いわゆる2次元ポインタ)
 		base_i=0
@@ -135,7 +136,7 @@ class AlphabetIndex(object):
 				self.itemIndexfeatures.append("%s_(%s)"%(item.name,",".join(vvv)))
 
 			base_i+=item.aSize # i番目のitem変数のalphabetサイズ分base_iを飛ばす
-		#print(self.itemIndex)
+
 
 
 		#### itemset
@@ -171,15 +172,10 @@ class AlphabetIndex(object):
 
 
 		for i, sequence in enumerate(self.ds.sequences):
-			#print(sequence.data)
-			#print("----------")
 
 			indexedSequence=[]
 			for elements in sequence.data:
-				# print("seq",seq)
-				# seq ['100', [[97, ['b', 'h']], [194, ['b', 'd']], [256, ['g', 'j']], [353, ['d', 'e']]]]
 				sid=elements[0]
-
 				indexedElements=[]
 				for itemset in elements[1]:
 					indexedItemset=set()
@@ -254,7 +250,6 @@ class AlphabetIndex(object):
 					fstr += "[" + ",".join(sfstk[int(vv1[3])]) + "]"
 	
 				self.sequenceIndexfeatures.append("%s_%s"%(name,fstr))
-				print(len(pidstk),pos,len(self.sequenceIndexfeatures))
 
 			base_i+=sequence.aSize
 
@@ -300,14 +295,7 @@ class AlphabetIndex(object):
 		for v in self.itemsetfeatures:
 			self.features.append(v)		
 
-
-		#print(self.x.transpose().shape)
-		#np.savetxt('xxham_%d.txt'%self.no, self.x)
-		#self.no+=1
-		#print(self.x)
-
 		for dummy in self.sequenceIndex:
-			print(dummy)
 			self.x=np.hstack((self.x,dummy))
 
 

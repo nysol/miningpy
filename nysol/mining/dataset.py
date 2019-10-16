@@ -96,16 +96,14 @@ class Itemset(object):
 		# データの最後のidがidListの最後でない場合、空のitemsetを追加
 		while idList_i<len(idList):
 			self.data.append([])
-			#self.data.append((idList[idList_i],[]))
 			idList_i+=1
-		#print("itemset",len(self.data))
+
 
 		self.num2alpha=sorted(list(self.alpha2num))
 		self.alpha2num={}
 		for i,alpha in enumerate(self.num2alpha):
 			self.alpha2num[alpha]=i
-		#print(self.num2alpha)
-		#print(self.alpha2num)
+
 
 		self.aSize=len(self.num2alpha)
 
@@ -176,16 +174,12 @@ class Sequence(object):
 		# データの最後のidがidListの最後でない場合、空のseqを追加
 		while idList_i<len(idList):
 			self.data.append([idList[idList_i],[]])
-			#self.data.append((idList[idList_i],[]))
 			idList_i+=1
-		#print("itemset",len(self.data))
 
 		self.num2alpha=sorted(list(self.alpha2num))
 		self.alpha2num={}
 		for i,alpha in enumerate(self.num2alpha):
 			self.alpha2num[alpha]=i
-		print(self.num2alpha)
-		print(self.alpha2num)
 
 		self.aSize=len(self.num2alpha)
 
@@ -217,7 +211,6 @@ class dataset(object):
 			if self.iFile_nFlds:
 				smp=[]
 				for v in self.iFile_nFlds:
-					#print(line[v])
 					smp.append(float(line[v]))
 				self.nums.append(smp)
 
@@ -242,7 +235,6 @@ class dataset(object):
 
 		for i,cat in enumerate(np.array(cats).transpose()):
 			self.cats.append(Category(self.iFile_cFlds[i],cat))
-			#print(self.cats[-1].data)
 
 		for i,item in enumerate(np.array(items).transpose()):
 			self.items.append(Item(self.iFile_iFlds[i],self.iFile_iSize[i],item))
@@ -272,12 +264,10 @@ class dataset(object):
 		if "traFiles" in config:
 			for param in config["traFiles"]:
 				self.itemsets.append(Itemset(param,self.id))
-				#print("ds.id",len(ds.itemsets[-1].data))
 
 		self.sequences=[]
 		for param in config["seqFiles"]:
 			self.sequences.append(Sequence(param,self.id))
-			#print("ds.id",len(ds.itemsets[-1].data))
 
 	def _summary(self):	
 		print("self.idFld:",self.idFld)

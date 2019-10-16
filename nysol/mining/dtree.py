@@ -54,6 +54,9 @@ class dtree(object):
 		import pydotplus
 		from sklearn.externals.six import StringIO
 		dot_data = StringIO()
+		
+		#print(features)
+		#print(self.model)
 		tree.export_graphviz(self.model, out_file=dot_data,feature_names=features )
 		graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
 		graph.write_pdf(oFile)
