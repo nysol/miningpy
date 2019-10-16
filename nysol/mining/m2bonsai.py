@@ -3,6 +3,7 @@
 import os
 import sys
 import numpy as np
+import copy
 import nysol.mining.mspade as mm
 
 import warnings
@@ -33,6 +34,9 @@ class AlphabetIndex(object):
 		self.model=dtree(config.dTree)
 		self.features=[]
 		self.featuresALL = []
+		self.optimal_score=None
+		self.optimal_model = None
+
 
 	# item変数,itemset変数,sequence変数のindexing探索空間を設定する(spaces)
 	# spcacesはbayes最適化探索空間で使われる一次元ベクトルなので、
@@ -311,16 +315,24 @@ class AlphabetIndex(object):
 		##4. スコアを返す(-1を返すのはbayes最適化が最小化のため)
 		score=self.model.score
 		print("accuracy",score)
-		self.model.vizModel("graph.pdf",self.features)
 
+		self.model.vizModel("graph.pdf",None)
+
+		if self.optimal_score == None or self.optimal_score < score:
+			self.optimal_score = score
+			self.optimal_model = copy.deepcopy(self.model)
+			self.optimal_features = copy.deepcopy(self.features)
+			
 		return (-1)*score
 
 
 	# bayes最適化実行
 	def optimize(self):
 
-		res=gp_minimize(self.objFunction, self.spaces, n_calls=30, random_state=11)
+		res=gp_minimize(self.objFunction, self.spaces, n_calls=10, random_state=11)
 		self.features = self.featuresALL[res.x_iters.index(res.x)]
+
+
 
 ##########
 # entry point
@@ -343,7 +355,9 @@ ai=AlphabetIndex()
 ai.setSpaces(ds)
 ai.optimize()
 
-ai.model.vizModel("graph.pdf",ai.features)
+ai.optimal_model.vizModel("graph.pdf",None)
+ai.optimal_model.vizModel("graph.pdf",ai.optimal_features)
+print(ai.optimal_score)
 
 
 exit()
