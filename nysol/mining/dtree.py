@@ -69,7 +69,7 @@ class dtree(object):
 		dot_data = StringIO()
 
 		#print(self.y)
-		aa=tree.export_graphviz(self.model, out_file=dot_data,feature_names=features,class_names=True )
+		aa=tree.export_graphviz(self.model, out_file=dot_data,feature_names=features)
 		graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
 		graph.write_pdf(oFile)
 		print(tree.export_text(self.model,feature_names=features))
