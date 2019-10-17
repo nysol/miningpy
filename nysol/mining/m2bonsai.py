@@ -334,6 +334,8 @@ class AlphabetIndex(object):
 		#print(self.x)
 		#print(np.asarray(self.x))
 		#exit()
+		if len(self.ds.nums) !=0 :
+			self.x=np.hstack((self.x,self.ds.nums))
 		for xx in self.ds.iFile_nFlds:
 			self.features.append(xx)
 
