@@ -259,6 +259,60 @@ class AlphabetIndex(object):
 
 
 
+	# self.xにモデル用データセットのx作成
+	def mkx(self,space):
+
+		self.features = []
+		##1 indexing実行
+		self.indexing(space) # self.itemIndex: item,itemsetデータをxでindexingする
+
+		# np.hstackするためのダミー列作成
+		self.x=np.empty((len(self.ds.y),1))
+
+		##2 データセットの結合
+		# 数値変数
+		for xx in self.ds.iFile_nFlds:
+			self.features.append(xx)
+
+		# category変数
+		for cat in self.ds.cats:
+			self.x=np.hstack((self.x,cat.data))
+			for v in cat.num2str:
+				self.features.append("%s_%s"%(cat.name,v))
+
+		# index化されたitem変数
+		for dummy in self.itemIndex:
+			self.x=np.hstack((self.x,dummy))
+
+		for v in self.itemIndexfeatures:
+			self.features.append(v)		
+
+
+		# index化されたitemset変数
+		for dummy in self.itemsetIndex:
+			self.x=np.hstack((self.x,dummy))
+
+		for v in self.itemsetfeatures:
+			self.features.append(v)		
+
+
+		#print(self.x.transpose().shape)
+		#np.savetxt('xxham_%d.txt'%self.no, self.x)
+		#self.no+=1
+		#print(self.x)
+
+		for dummy in self.sequenceIndex:
+			print(dummy)
+			self.x=np.hstack((self.x,dummy))
+
+
+		for v in self.sequenceIndexfeatures:
+			self.features.append(v)		
+
+		# join用の列を削除
+		self.x=self.x[:,1:]
+		self.featuresALL.append(self.features)
+
 
 	# bayes最適化目的関数
 	##1. indexing対象項目があれば、indexingしてdummy化されたデータを作成
@@ -270,6 +324,57 @@ class AlphabetIndex(object):
 		self.features = []
 		##1 indexing実行
 		self.indexing(space) # self.itemIndex: item,itemsetデータをxでindexingする
+		
+		##2 データセットの結合
+		# 数値変数
+		#print(len(self.ds.y))
+		self.x=np.empty((len(self.ds.y),1))
+		#print(self.x)
+		#print(np.asarray(self.x))
+		#exit()
+		for xx in self.ds.iFile_nFlds:
+			self.features.append(xx)
+
+		# category変数
+		for cat in self.ds.cats:
+			self.x=np.hstack((self.x,cat.data))
+			for v in cat.num2str:
+				self.features.append("%s_%s"%(cat.name,v))
+
+		# index化されたitem変数
+		for dummy in self.itemIndex:
+			self.x=np.hstack((self.x,dummy))
+
+		for v in self.itemIndexfeatures:
+			self.features.append(v)		
+
+
+		# index化されたitemset変数
+		for dummy in self.itemsetIndex:
+			self.x=np.hstack((self.x,dummy))
+
+		for v in self.itemsetfeatures:
+			self.features.append(v)		
+
+
+		#print(self.x.transpose().shape)
+		#np.savetxt('xxham_%d.txt'%self.no, self.x)
+		#self.no+=1
+		#print(self.x)
+
+		for dummy in self.sequenceIndex:
+			print(dummy)
+			self.x=np.hstack((self.x,dummy))
+
+
+		for v in self.sequenceIndexfeatures:
+			self.features.append(v)		
+
+		# join用の列を削除
+		self.x=self.x[:,1:]
+		
+		
+		"""
 
 		##2 データセットの結合
 		# 数値変数
@@ -305,6 +410,7 @@ class AlphabetIndex(object):
 
 		for v in self.sequenceIndexfeatures:
 			self.features.append(v)		
+		"""
 
 
 		self.featuresALL.append(self.features)
@@ -328,10 +434,17 @@ class AlphabetIndex(object):
 
 	# bayes最適化実行
 	def optimize(self):
+		if len(self.spaces)==0:
+			self.mkx(None)
+			self.model.setDataset(self.x,self.ds.y)
+			self.model.build()
+			self.optimal_score = self.model.score
+			self.optimal_model = self.model
+			self.optimal_features = self.features
 
-		res=gp_minimize(self.objFunction, self.spaces, n_calls=10, random_state=11)
-		self.features = self.featuresALL[res.x_iters.index(res.x)]
-
+		else:
+			res=gp_minimize(self.objFunction, self.spaces, n_calls=10, random_state=11)
+			self.features = self.featuresALL[res.x_iters.index(res.x)]
 
 
 ##########
@@ -355,9 +468,11 @@ ai=AlphabetIndex()
 ai.setSpaces(ds)
 ai.optimize()
 
+print(ai.optimal_score)
+print(ai.optimal_features)
+
 ai.optimal_model.vizModel("graph.pdf",None)
 ai.optimal_model.vizModel("graph.pdf",ai.optimal_features)
-print(ai.optimal_score)
 
 
 exit()

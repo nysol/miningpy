@@ -20,18 +20,21 @@ def mkDummy(svec):
 	return data
 
 class Category(object):
-	def __init__(self,name,data):
+	def __init__(self,name,data,dummy=True):
 		self.name=name
 		# data: string vector (category variable)
 		# ["a","c","a","b"]
-		self.num2str=np.unique(data) # ["a","b","c"]
+		self.num2str=sorted(np.unique(data)) # ["a","b","c"]
+		if dummy :
+			self.num2str=self.num2str[1:] # ["a","b","c"]
 		self.str2num={}
 		for i,s in enumerate(self.num2str):
 			self.str2num[s]=i
 
 		self.data=np.zeros((len(data), len(self.num2str)))
 		for i,s in enumerate(data):
-			self.data[i,self.str2num[s]]=1.0
+			if s in self.str2num:
+				self.data[i,self.str2num[s]]=1.0
 
 	def _summary(self):
 		print("self.name:",self.name)

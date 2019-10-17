@@ -23,6 +23,17 @@ class dtree(object):
 	def setDataset(self,x,y):
 		self.x=x
 		self.y=y
+		# 最小のクラスタサイズをセット
+		# 10以下ならcross validationできないことを判定させるため=>build()の最初
+		c={}
+		for v in self.y:
+			if v not in c:
+				c[v]=0
+			c[v]+=1
+		self.y_minClassSize=999999999
+		for v in c.values():
+			if v<self.y_minClassSize:
+				self.y_minClassSize=v
 
 	def objectiveImpurity(self,spaces):
 		params=self.config
@@ -33,18 +44,20 @@ class dtree(object):
 		return -np.mean(cross_val_score(clf, self.x, self.y, cv=skFold, scoring='accuracy'))
 
 	def build(self):
-		parameters = {'min_impurity_decrease':list(np.arange(0.0,0.1,0.01))}
-
-		# ベイズ最適化による最適min_impurity_decreaseの探索(CVによる推定)
-		spaces = [(0.0,0.1, 'uniform')]
-		#res = gp_minimize(self.objectiveImpurity, spaces, acq_func="EI", n_calls=10, random_state=11)
-		res = gp_minimize(self.objectiveImpurity, spaces, n_calls=10, random_state=11)
-		#print(res.fun) # 目的関数値(accuracy*(-1))
-		#print(res.x) # min_impurity_decrease 最適値
-
-		# モデル構築
 		params=self.config
-		params["min_impurity_decrease"]=res.x[0]
+
+		if self.y_minClassSize>=10:
+			parameters = {'min_impurity_decrease':list(np.arange(0.0,0.1,0.01))}
+			# ベイズ最適化による最適min_impurity_decreaseの探索(CVによる推定)
+			spaces = [(0.0,0.1, 'uniform')]
+			#res = gp_minimize(self.objectiveImpurity, spaces, acq_func="EI", n_calls=10, random_state=11)
+			res = gp_minimize(self.objectiveImpurity, spaces, n_calls=10, random_state=11)
+			#print(res.fun) # 目的関数値(accuracy*(-1))
+			#print(res.x) # min_impurity_decrease 最適値
+		
+			# 最適枝刈り度のセット
+			params["min_impurity_decrease"]=res.x[0]
+
 		self.model=tree.DecisionTreeClassifier(**params)
 		self.model.fit(self.x, self.y)
 		#print(dir(self.model))
@@ -57,7 +70,8 @@ class dtree(object):
 		
 		#print(features)
 		#print(self.model)
-		tree.export_graphviz(self.model, out_file=dot_data,feature_names=features )
+		print(self.y)
+		aa=tree.export_graphviz(self.model, out_file=dot_data,feature_names=features,class_names=True )
 		graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
 		graph.write_pdf(oFile)
 		print(tree.export_text(self.model,feature_names=features))
