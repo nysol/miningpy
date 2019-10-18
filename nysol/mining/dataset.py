@@ -198,6 +198,16 @@ class dataset(object):
 	def readBaseFile(self):
 		cats=[]
 		items=[]
+
+		# 目的変数変換テーブル
+		if self.iFile_yType!="r": # regression
+			cnt=0
+			for lin in nm.mdelnull(f="*",i=self.iFile_name).mcut(f=self.iFile_yFld).muniq(k=self.iFile_yFld):
+				self.ovmap[lin[0]] = cnt
+				self.ovlist.append(lin[0])
+				cnt += 1
+
+
 		for line in nm.mdelnull(f="*",i=self.iFile_name).msortf(f=self.idFld).getline(otype="dict"):
 			### null値対応
 			### itemFld対応 => indexing対象となるcategoryFld
@@ -208,7 +218,7 @@ class dataset(object):
 			if self.iFile_yType=="r": # regression
 				self.y.append(float(line[self.iFile_yFld]))
 			else:                # classification
-				self.y.append(line[self.iFile_yFld])
+				self.y.append(self.ovmap[line[self.iFile_yFld]])
 
 			# 数値変数
 			if self.iFile_nFlds:
@@ -260,6 +270,10 @@ class dataset(object):
 		self.nums=[]
 		self.cats=[]
 		self.items=[]
+		self.ovmap={}
+		self.ovlist=[]
+
+
 		# self.id,self.yなどの基本変数はここでセットされる
 		self.readBaseFile()
 

@@ -63,14 +63,51 @@ class dtree(object):
 		#print(dir(self.model))
 		self.score=self.model.score(self.x, self.y)
 
-	def vizModel(self,oFile,features):
+	def vizModel(self,oFile,features=None,classes=None):
 		import pydotplus
 		from sklearn.externals.six import StringIO
 		dot_data = StringIO()
 
 		#print(self.y)
-		aa=tree.export_graphviz(self.model, out_file=dot_data,feature_names=features)
-		graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
+		
+		tree.export_graphviz(self.model, out_file=dot_data,feature_names=features)
+
+		dot=tree.export_graphviz(self.model,feature_names=features,class_names=classes)
+		newdot=[]
+		import re
+		pre_pattern = r'^[0-9]* \[label="'
+		suf_pattern = r'"] ;$'
+		for line in dot.split('\n'):
+			if re.match(pre_pattern , line):
+				lbl = re.sub(suf_pattern , '' ,re.sub(pre_pattern,'',line))
+				lbldata = lbl.split("\\n")
+				if len(lbldata) == 4:
+					lblval=lbldata[0].split(' ')
+					lblval0 = lblval[0].split("_")
+					if len(lblval0) > 1:
+						if lblval[-2] == "<=":
+							#項目名対応する
+							nn = "_".join(lblval0[0:-1])							
+							newlable = 'label="%s != %s\\\\n%s\\\\n%s\\\\n%s"] ;'%(nn,lblval0[-1],lbldata[1],lbldata[2],lbldata[3])
+							newdot.append(re.sub(r'label=".*"] ;',newlable,line))
+
+						else:
+							nn = "_".join(lblval0[0:-1])							
+							newlable = 'label="%s == %s\\\\n%s\\\\n%s\\\\n%s"] ;'%(nn,lblval0[-1],lbldata[1],lbldata[2],lbldata[3])
+							newdot.append(re.sub(r'label=".*"] ;',newlable,line))
+					else:
+						newdot.append(line)
+
+				else:
+					newdot.append(line)
+
+			else:
+				newdot.append(line)
+
+		newdotstr = '\n'.join(newdot)
+
+		#graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
+		graph = pydotplus.graph_from_dot_data(newdotstr)
 		graph.write_pdf(oFile)
 		print(tree.export_text(self.model,feature_names=features))
 

@@ -476,7 +476,10 @@ print(ai.optimal_score)
 print(ai.optimal_features)
 
 ai.optimal_model.vizModel("graph.pdf",None)
-ai.optimal_model.vizModel("graph.pdf",ai.optimal_features)
+if len(ds.ovlist) != 0:
+	ai.optimal_model.vizModel("graph.pdf",ai.optimal_features,ds.ovlist)
+else:
+	ai.optimal_model.vizModel("graph.pdf",ai.optimal_features)
 
 
 exit()
