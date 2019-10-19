@@ -38,7 +38,6 @@
 		}
 	],
 	"dTree": { "max_depth":10 },
-	"rTree": { "max_depth":3 },
 	"oPath": "result_crx"
 }
 
