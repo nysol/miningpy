@@ -17,6 +17,7 @@ from skopt import gp_minimize
 class dtree(object):
 	def __init__(self,config):
 		self.config=config
+		self.min_impurity_decrease=None
 		pass
 
 	# https://own-search-and-study.xyz/2016/12/25/scikit-learn%E3%81%A7%E5%AD%A6%E7%BF%92%E3%81%97%E3%81%9F%E6%B1%BA%E5%AE%9A%E6%9C%A8%E6%A7%8B%E9%80%A0%E3%81%AE%E5%8F%96%E5%BE%97%E6%96%B9%E6%B3%95%E3%81%BE%E3%81%A8%E3%82%81/
@@ -36,6 +37,9 @@ class dtree(object):
 				self.y_minClassSize=v
 
 	def objectiveImpurity(self,spaces):
+		print("Impurity")
+		print(spaces)
+
 		params=self.config
 		params["min_impurity_decrease"]=spaces[0]
 		clf=tree.DecisionTreeClassifier(**params)
@@ -51,17 +55,54 @@ class dtree(object):
 			# ベイズ最適化による最適min_impurity_decreaseの探索(CVによる推定)
 			spaces = [(0.0,0.1, 'uniform')]
 			#res = gp_minimize(self.objectiveImpurity, spaces, acq_func="EI", n_calls=10, random_state=11)
+			print("build")
+			print(spaces)
 			res = gp_minimize(self.objectiveImpurity, spaces, n_calls=10, random_state=11)
 			#print(res.fun) # 目的関数値(accuracy*(-1))
 			#print(res.x) # min_impurity_decrease 最適値
 		
 			# 最適枝刈り度のセット
 			params["min_impurity_decrease"]=res.x[0]
+			self.min_impurity_decrease = res.x[0]
+
+
+		self.model=tree.DecisionTreeClassifier(**params)
+		self.model.fit(self.x, self.y)
+		#print(dir(self.model))
+
+		self.score=self.model.score(self.x, self.y)
+		print("m accuracy",self.score)
+
+
+	def pbuild(self,min_impurity_decrease):
+		params=self.config
+		
+		
+		"""
+		if self.y_minClassSize>=10:
+			parameters = {'min_impurity_decrease':list(np.arange(0.0,0.1,0.01))}
+			# ベイズ最適化による最適min_impurity_decreaseの探索(CVによる推定)
+			spaces = [(0.0,0.1, 'uniform')]
+			#res = gp_minimize(self.objectiveImpurity, spaces, acq_func="EI", n_calls=10, random_state=11)
+			res = gp_minimize(self.objectiveImpurity, spaces, n_calls=10, random_state=11)
+			#print(res.fun) # 目的関数値(accuracy*(-1))
+			#print(res.x) # min_impurity_decrease 最適値
+		
+			# 最適枝刈り度のセット
+			params["min_impurity_decrease"]=res.x[0]
+			self.min_impurity_decrease = res.x[0]
+		"""
+		if min_impurity_decrease != None:
+			params["min_impurity_decrease"]=min_impurity_decrease
+
 
 		self.model=tree.DecisionTreeClassifier(**params)
 		self.model.fit(self.x, self.y)
 		#print(dir(self.model))
 		self.score=self.model.score(self.x, self.y)
+		print("pbuild")
+		print(self.score)
+
 
 	def vizModel(self,oFile,features=None,classes=None):
 		import pydotplus
@@ -73,6 +114,9 @@ class dtree(object):
 		tree.export_graphviz(self.model, out_file=dot_data,feature_names=features)
 
 		dot=tree.export_graphviz(self.model,feature_names=features,class_names=classes)
+
+		# dot フォーマット強制変換
+		#あとで項目名対応する or　treeのメソッドを実装
 		newdot=[]
 		import re
 		pre_pattern = r'^[0-9]* \[label="'
@@ -81,19 +125,18 @@ class dtree(object):
 			if re.match(pre_pattern , line):
 				lbl = re.sub(suf_pattern , '' ,re.sub(pre_pattern,'',line))
 				lbldata = lbl.split("\\n")
-				if len(lbldata) == 4:
+				if len(lbldata) == 5:
 					lblval=lbldata[0].split(' ')
 					lblval0 = lblval[0].split("_")
 					if len(lblval0) > 1:
 						if lblval[-2] == "<=":
-							#項目名対応する
 							nn = "_".join(lblval0[0:-1])							
-							newlable = 'label="%s != %s\\\\n%s\\\\n%s\\\\n%s"] ;'%(nn,lblval0[-1],lbldata[1],lbldata[2],lbldata[3])
+							newlable = 'label="%s != %s\\\\n%s\\\\n%s\\\\n%s\\\\n%s"] ;'%(nn,lblval0[-1],lbldata[1],lbldata[2],lbldata[3],lbldata[4])
 							newdot.append(re.sub(r'label=".*"] ;',newlable,line))
 
 						else:
 							nn = "_".join(lblval0[0:-1])							
-							newlable = 'label="%s == %s\\\\n%s\\\\n%s\\\\n%s"] ;'%(nn,lblval0[-1],lbldata[1],lbldata[2],lbldata[3])
+							newlable = 'label="%s == %s\\\\n%s\\\\n%s\\\\n%s\\\\n%s"] ;'%(nn,lblval0[-1],lbldata[1],lbldata[2],lbldata[3],lbldata[4])
 							newdot.append(re.sub(r'label=".*"] ;',newlable,line))
 					else:
 						newdot.append(line)
@@ -106,10 +149,11 @@ class dtree(object):
 
 		newdotstr = '\n'.join(newdot)
 
-		#graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
 		graph = pydotplus.graph_from_dot_data(newdotstr)
 		graph.write_pdf(oFile)
-		print(tree.export_text(self.model,feature_names=features))
+
+
+		print(tree.export_text(self.model,feature_names=features,show_weights=True))
 
 if __name__ == '__main__':
 	import importlib

@@ -1,0 +1,16 @@
+{
+	"dataset": { 
+		"idFld":"id",
+		"iFile":{
+			"name":"yaki.csv",
+			"cFlds":["お茶漬け","カルビ","タン","キモ"],
+			"yFld":"wine",
+			"yType":"c"
+		}
+	},
+	"dTree" : { "max_depth":2 },
+	"dTree" : { "max_depth":2 },
+	"rTree" : { "max_depth":3 },
+	"oPath" : "result0"
+}
+

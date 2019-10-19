@@ -15,7 +15,7 @@ from dataset import dataset
 
 def checkConfig(config):
 
-	if not os.path.exists(config.dataset["iFile"]["name"]):
+	if not os.path.exists(config["dataset"]["iFile"]["name"]):
 		raise Exception("## ERROR: file not found: %s"%config.iFile)
 
 	# iFldsとiSizeのサイズが異なればエラー
@@ -31,7 +31,7 @@ class AlphabetIndex(object):
 		#self.num2alpha=[] # num=>alphabet
 		#self.alpha2num={} # alphabet=>num
 		self.spaces=[] # 探索空間
-		self.model=dtree(config.dTree)
+		self.model=dtree(config["dTree"])
 		self.features=[]
 		self.featuresALL = []
 		self.optimal_score=None
@@ -159,7 +159,7 @@ class AlphabetIndex(object):
 			for ii , vv  in enumerate(spaces[base_i:base_i+itemset.aSize]):
 				sfstk[vv].append(itemset.num2alpha[ii])
 			for vvv in sfstk:
-				self.itemsetfeatures.append("%s_(%s)"%(itemset.name,",".join(vvv)))
+				self.itemsetfeatures.append("%s_(%s)"%(itemset.fldname,",".join(vvv)))
 			base_i+=itemset.aSize
 
 		
@@ -186,13 +186,12 @@ class AlphabetIndex(object):
 					time=itemset[0]
 					for alpha in itemset[1]:
 						index=spaces[base_i+sequence.alpha2num[alpha]]
-						#indexedItemset.add(index)
-						indexedItemset.add(str(index))
+						indexedItemset.add(str(index)) # mspade数値だとおかしくなる
 					indexedElements.append([time,list(indexedItemset)])
 				indexedSequence.append([sid,indexedElements])
 
 
-			rules = self.enumSeqpatterns(sequence.name,indexedSequence)
+			rules = self.enumSeqpatterns(sequence.fldname,indexedSequence)
 
 			sfstk =	[ [] for _ in range(sequence.iSize) ]
 			for ii , vv  in enumerate(spaces[base_i:base_i+sequence.aSize]):
@@ -257,8 +256,6 @@ class AlphabetIndex(object):
 
 			base_i+=sequence.aSize
 
-
-
 	# self.xにモデル用データセットのx作成
 	def mkx(self,space):
 
@@ -297,14 +294,7 @@ class AlphabetIndex(object):
 		for v in self.itemsetfeatures:
 			self.features.append(v)		
 
-
-		#print(self.x.transpose().shape)
-		#np.savetxt('xxham_%d.txt'%self.no, self.x)
-		#self.no+=1
-		#print(self.x)
-
 		for dummy in self.sequenceIndex:
-			print(dummy)
 			self.x=np.hstack((self.x,dummy))
 
 
@@ -326,14 +316,77 @@ class AlphabetIndex(object):
 		self.features = []
 		##1 indexing実行
 		self.indexing(space) # self.itemIndex: item,itemsetデータをxでindexingする
-		
+
+		# np.hstackするためのダミー列作成
+		self.x=np.empty((len(self.ds.y),1))
+
 		##2 データセットの結合
 		# 数値変数
-		#print(len(self.ds.y))
+		if len(self.ds.nums) !=0 :
+			self.x=np.hstack((self.x,self.ds.nums))
+		for xx in self.ds.iFile_nFlds:
+			self.features.append(xx)
+
+		# category変数
+		for cat in self.ds.cats:
+			self.x=np.hstack((self.x,cat.data))
+			for v in cat.num2str:
+				self.features.append("%s_%s"%(cat.name,v))
+
+		# index化されたitem変数
+		for dummy in self.itemIndex:
+			self.x=np.hstack((self.x,dummy))
+
+		for v in self.itemIndexfeatures:
+			self.features.append(v)
+
+		# index化されたitemset変数
+		for dummy in self.itemsetIndex:
+			self.x=np.hstack((self.x,dummy))
+
+		for v in self.itemsetfeatures:
+			self.features.append(v)
+
+		# index化されたsequence変数
+		for dummy in self.sequenceIndex:
+			self.x=np.hstack((self.x,dummy))
+		for v in self.sequenceIndexfeatures:
+			self.features.append(v)		
+
+		# join用ダミー列を削除
+		self.x=self.x[:,1:]
+		self.featuresALL.append(self.features)
+
+		##3. モデル構築
+		self.model.setDataset(self.x,self.ds.y)
+		self.model.build()
+
+		##4. スコアを返す(-1を返すのはbayes最適化が最小化のため)
+		score=self.model.score
+		print("accuracy",score)
+
+		if self.optimal_score == None or self.optimal_score < score:
+			self.optimal_score = score
+			self.optimal_model = copy.deepcopy(self.model)
+			self.optimal_features = copy.deepcopy(self.features)
+			self.min_impurity_decrease = self.model.min_impurity_decrease
+			
+		return (-1)*score
+
+
+
+	def predict(self,space,min_impurity_decrease): # xはself.spaces
+
+		self.features = []
+		##1 indexing実行
+		self.indexing(space) # self.itemIndex: item,itemsetデータをxでindexingする
+
+		# np.hstackするためのダミー列作成
+		print(len(self.ds.y))
 		self.x=np.empty((len(self.ds.y),1))
-		#print(self.x)
-		#print(np.asarray(self.x))
-		#exit()
+
+		##2 データセットの結合
+		# 数値変数
 		if len(self.ds.nums) !=0 :
 			self.x=np.hstack((self.x,self.ds.nums))
 		for xx in self.ds.iFile_nFlds:
@@ -361,79 +414,24 @@ class AlphabetIndex(object):
 			self.features.append(v)		
 
 
-		#print(self.x.transpose().shape)
-		#np.savetxt('xxham_%d.txt'%self.no, self.x)
-		#self.no+=1
-		#print(self.x)
-
+		# index化されたsequence変数
 		for dummy in self.sequenceIndex:
-			print(dummy)
 			self.x=np.hstack((self.x,dummy))
-
-
 		for v in self.sequenceIndexfeatures:
 			self.features.append(v)		
 
-		# join用の列を削除
+
+		# join用ダミー列を削除
 		self.x=self.x[:,1:]
-		
-		
-		"""
-
-		##2 データセットの結合
-		# 数値変数
-		self.x=self.ds.nums
-		for xx in self.ds.iFile_nFlds:
-			self.features.append(xx)
-
-		# category変数
-		for cat in self.ds.cats:
-			self.x=np.hstack((self.x,cat.data))
-			for v in cat.num2str:
-				self.features.append("%s_%s"%(cat.name,v))
-
-
-		# index化されたitem変数
-		for dummy in self.itemIndex:
-			self.x=np.hstack((self.x,dummy))
-
-		for v in self.itemIndexfeatures:
-			self.features.append(v)		
-
-
-		# index化されたitemset変数
-		for dummy in self.itemsetIndex:
-			self.x=np.hstack((self.x,dummy))
-
-		for v in self.itemsetfeatures:
-			self.features.append(v)		
-
-		for dummy in self.sequenceIndex:
-			self.x=np.hstack((self.x,dummy))
-
-
-		for v in self.sequenceIndexfeatures:
-			self.features.append(v)		
-		"""
-
 
 		self.featuresALL.append(self.features)
 		##3. モデル構築
 		self.model.setDataset(self.x,self.ds.y)
-		self.model.build()
+		self.model.pbuild(min_impurity_decrease)
 
 		##4. スコアを返す(-1を返すのはbayes最適化が最小化のため)
 		score=self.model.score
-		print("accuracy",score)
-
-		self.model.vizModel("graph.pdf",None)
-
-		if self.optimal_score == None or self.optimal_score < score:
-			self.optimal_score = score
-			self.optimal_model = copy.deepcopy(self.model)
-			self.optimal_features = copy.deepcopy(self.features)
-			
-		return (-1)*score
+		print("p accuracy",score)
 
 
 	# bayes最適化実行
@@ -445,10 +443,14 @@ class AlphabetIndex(object):
 			self.optimal_score = self.model.score
 			self.optimal_model = self.model
 			self.optimal_features = self.features
+			self.min_impurity_decrease = self.model.min_impurity_decrease
+			self.optimal_space = self.spaces
 
 		else:
+			#print(self.spaces)
 			res=gp_minimize(self.objFunction, self.spaces, n_calls=10, random_state=11)
 			self.features = self.featuresALL[res.x_iters.index(res.x)]
+			self.optimal_space = res.x
 
 
 ##########
@@ -456,36 +458,36 @@ class AlphabetIndex(object):
 argv=sys.argv
 if len(argv)!=2:
 	print("m2bonsai.py ")
-	print("%s 設定ファイル(py)"%argv[0])
+	print("%s 設定ファイル(json)"%argv[0])
 	exit()
 
 # configファイルの読み込み
-import importlib
+#import importlib
 configFile=os.path.expanduser(argv[1])
-sys.path.append(os.path.dirname(configFile))
-config=importlib.import_module(os.path.basename(configFile).replace(".py",""))
+#sys.path.append(os.path.dirname(configFile))
+#config=importlib.import_module(os.path.basename(configFile).replace(".py",""))
+
+
+import json
+with open(configFile, 'r') as rp:
+	config = json.load(rp)
+
 checkConfig(config)
 
-ds=dataset(config.dataset)
+ds=dataset(config["dataset"])
 
 ai=AlphabetIndex()
 ai.setSpaces(ds)
 ai.optimize()
 
-print(ai.optimal_score)
-print(ai.optimal_features)
 
-ai.optimal_model.vizModel("graph.pdf",None)
+ai.predict(ai.optimal_space,ai.min_impurity_decrease)
+##ai.optimal_model.vizModel("graph.pdf",None)
 if len(ds.ovlist) != 0:
-	ai.optimal_model.vizModel("graph.pdf",ai.optimal_features,ds.ovlist)
+	ai.optimal_model.vizModel("graph_o.pdf",ai.optimal_features,ds.ovlist)
+	ai.model.vizModel("graph_p.pdf",ai.optimal_features,ds.ovlist)
 else:
 	ai.optimal_model.vizModel("graph.pdf",ai.optimal_features)
 
 
 exit()
-
-model=Dtree()
-model.setDataset(ds.x,ds.y)
-model.build()
-model.vizModel("graph.pdf")
-

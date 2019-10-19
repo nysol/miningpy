@@ -1,0 +1,44 @@
+{
+	"dataset":{
+		"idFld":"id",
+		"iFile":{
+			"name":"data/crx2.csv",
+			"cFlds":["d1"],
+			"nFlds":["n1"],
+			"iFlds":["i1","i2"],
+			"iSize":[2,3],
+			"yFld":"class",
+			"yType":"c"
+		}
+	},
+	"traFiles":[
+		{
+			"name":"data/crx_tra1.csv",
+			"iSize":3,
+			"fldname":"trafld1"
+		},
+		{
+			"name":"data/crx_tra2.csv",
+			"iSize":4,
+			"fldname":"trafld2"
+		}
+	],
+	"seqFiles":[
+		{
+			"name":"data/crx2_seq1.csv",
+			"fields":"id,time,item",
+			"iSize":2,
+			"fldname":"seqfld1"
+		},
+		{
+			"name":"data/crx2_seq2.csv",
+			"fields":"id,time,item",
+			"iSize":3,
+			"fldname":"seqfld2"
+		}
+	],
+	"dTree": { "max_depth":10 },
+	"rTree": { "max_depth":3 },
+	"oPath": "result_crx"
+}
+

@@ -1,0 +1,16 @@
+{
+	"dataset":{
+		"idFld":"id",
+		"iFile":{
+			"name":"yakic.csv",
+			"cFlds":["お茶漬け","カルビ","タン"],
+			"nFlds":["age"],
+			"yFld":"wine",
+			"yType":"c"
+		}
+	},
+	"dTree":{	"max_depth":2},
+	"rTree":{ "max_depth":3},
+	"oPath":"result1"
+}
+

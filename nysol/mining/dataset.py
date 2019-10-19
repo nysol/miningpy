@@ -6,18 +6,19 @@ import nysol.mcmd as nm
 import numpy as np
 
 # category変数のdummy変数化
-def mkDummy(svec):
-	# svec: string vector (category variable)
-	# ["a","c","a","b"]
-	num2str=np.unique(svec) # ["a","b","c"]
-	str2num={}
-	for i,s in enumerate(num2str):
-		str2num[s]=i
-
-	data=np.zeros((len(svec), len(num2str)))
-	for i,s in enumerate(svec):
-		data[i,str2num[s]]=1
-	return data
+# 使ってない
+#def mkDummy(svec):
+#	# svec: string vector (category variable)
+#	# ["a","c","a","b"]
+#	num2str=np.unique(svec) # ["a","b","c"]
+#	str2num={}
+#	for i,s in enumerate(num2str):
+#		str2num[s]=i
+#
+#	data=np.zeros((len(svec), len(num2str)))
+#	for i,s in enumerate(svec):
+#		data[i,str2num[s]]=1
+#	return data
 
 class Category(object):
 	def __init__(self,name,data,dummy=True):
@@ -42,12 +43,9 @@ class Category(object):
 		print("self.str2num:",self.str2num)
 		print("self.data:",self.data.shape,self.data[0:10])
 
-# iSize
-# aSize
-# data
-# num2alpha
-# alpha2num
+# iSize : aSize : data : num2alpha : alpha2num
 class Item(object):
+
 	def __init__(self,name,iSize,data):
 		self.name=name
 		self.iSize=iSize
@@ -67,9 +65,18 @@ class Item(object):
 		print("self.alpha2num:",self.alpha2num)
 		print("self.data:",self.data.shape,self.data[0:10])
 
+
+
 class Itemset(object):
 	def __init__(self,config,idList):
 		self.name=config["name"]
+		
+		if "fldname" in config:
+			self.fldname=config["fldname"]
+		else:
+			self.fldname=config["name"]
+
+
 		self.iSize=int(config["iSize"])
 		self.alpha2num=set([])
 		self.num2alpha=[]
@@ -119,8 +126,14 @@ class Itemset(object):
 		print("self.data:",len(self.data),self.data[0:10])
 
 class Sequence(object):
+
 	def __init__(self,config,idList):
 		self.name=config["name"]
+		if "fldname" in config:
+			self.fldname=config["fldname"]
+		else:
+			self.fldname=config["name"]
+
 		self.iSize=int(config["iSize"])
 		flds=config["fields"].split(",")
 		self.idFld=flds[0]
@@ -207,11 +220,12 @@ class dataset(object):
 				self.ovlist.append(lin[0])
 				cnt += 1
 
-
-		for line in nm.mdelnull(f="*",i=self.iFile_name).msortf(f=self.idFld).getline(otype="dict"):
+		lcnt=0
+		for line in nm.mdelnull(f="*",i=self.iFile_name,u="xxel").msortf(f=self.idFld).getline(otype="dict"):
 			### null値対応
 			### itemFld対応 => indexing対象となるcategoryFld
 			# sample-id項目
+			lcnt+=1
 			self.id.append(line[self.idFld])
 
 			# 目的変数
@@ -242,6 +256,7 @@ class dataset(object):
 				items.append(smp)
 
 		### List => ndarray
+		print(lcnt)
 		self.y=np.array(self.y)
 		self.sampleSize=len(self.y)
 		self.nums=np.array(self.nums)
@@ -253,17 +268,29 @@ class dataset(object):
 			self.items.append(Item(self.iFile_iFlds[i],self.iFile_iSize[i],item))
 
 	def __init__(self,config):
+
 		self.idFld=config["idFld"] # サンプルID項目名
 		self.iFile=config["iFile"] # 入力ファイル
 		self.iFile_name=self.iFile["name"] # 入力ファイル名
 		self.iFile_yFld=self.iFile["yFld"] # 目的変数名
 		self.iFile_yType=self.iFile["yType"] # 目的変数タイプ:regression/classification
+		
+		self.iFile_nFlds=[]
+		self.iFile_cFlds=[]
+		self.iFile_iFlds=[]
+		self.iFile_iSize=[]
 
-		self.iFile_nFlds=self.iFile["nFlds"] # 数値項目名
-		self.iFile_cFlds=self.iFile["cFlds"] # カテゴリ項目名
-		self.iFile_iFlds=self.iFile["iFlds"] # item項目名
-		self.iFile_iSize=self.iFile["iSize"] # item項目indexサイズ
+		if "nFlds" in self.iFile:
+			self.iFile_nFlds=self.iFile["nFlds"] # 数値項目名
 
+		if "cFlds" in self.iFile:
+			self.iFile_cFlds=self.iFile["cFlds"] # カテゴリ項目名
+
+		if "iFlds" in self.iFile:
+			self.iFile_iFlds=self.iFile["iFlds"] # item項目名
+
+		if "iSize" in self.iFile:
+			self.iFile_iSize=self.iFile["iSize"] # item項目indexサイズ
 
 		self.id=[]
 		self.y=[]
@@ -283,8 +310,9 @@ class dataset(object):
 				self.itemsets.append(Itemset(param,self.id))
 
 		self.sequences=[]
-		for param in config["seqFiles"]:
-			self.sequences.append(Sequence(param,self.id))
+		if "seqFiles" in config:
+			for param in config["seqFiles"]:
+				self.sequences.append(Sequence(param,self.id))
 
 	def _summary(self):	
 		print("self.idFld:",self.idFld)
