@@ -109,8 +109,6 @@ class dtree(object):
 		from sklearn.externals.six import StringIO
 		dot_data = StringIO()
 
-		#print(self.y)
-		
 		tree.export_graphviz(self.model, out_file=dot_data,feature_names=features)
 
 		dot=tree.export_graphviz(self.model,feature_names=features,class_names=classes)

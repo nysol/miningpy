@@ -5,6 +5,8 @@ import sys
 import numpy as np
 import copy
 import nysol.mining.mspade as mm
+from nysol.util.mmkdir import mkDir
+
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -463,9 +465,11 @@ if len(argv)!=2:
 
 # configファイルの読み込み
 #import importlib
-configFile=os.path.expanduser(argv[1])
+#configFile=os.path.expanduser(argv[1])
 #sys.path.append(os.path.dirname(configFile))
 #config=importlib.import_module(os.path.basename(configFile).replace(".py",""))
+
+configFile=os.path.expanduser(argv[1])
 
 
 import json
@@ -474,20 +478,22 @@ with open(configFile, 'r') as rp:
 
 checkConfig(config)
 
-ds=dataset(config["dataset"])
+odir = config["oPath"]
 
+ds=dataset(config["dataset"])
 ai=AlphabetIndex()
 ai.setSpaces(ds)
 ai.optimize()
 
+mkDir(odir)
 
 ai.predict(ai.optimal_space,ai.min_impurity_decrease)
 ##ai.optimal_model.vizModel("graph.pdf",None)
 if len(ds.ovlist) != 0:
-	ai.optimal_model.vizModel("graph_o.pdf",ai.optimal_features,ds.ovlist)
-	ai.model.vizModel("graph_p.pdf",ai.optimal_features,ds.ovlist)
+	ai.optimal_model.vizModel(odir+"/dtree_opt.pdf",ai.optimal_features,ds.ovlist)
+	ai.model.vizModel(odir+"/dtree.pdf",ai.optimal_features,ds.ovlist)
 else:
-	ai.optimal_model.vizModel("graph.pdf",ai.optimal_features)
+	ai.optimal_model.vizModel(odir+"/dtree.pdf",ai.optimal_features)
 
 
 exit()
