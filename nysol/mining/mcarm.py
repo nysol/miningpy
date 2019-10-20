@@ -449,16 +449,21 @@ if not ( len(argv)==2 or len(argv)==3 ):
 
 configFile=os.path.expanduser(argv[1])
 
-
-if argv[2] == "-usingJSON" :
-	import json
-	with open(configFile, 'r') as rp:
-		config = json.load(rp)
+if len(argv) > 2:
+	if argv[2] == "-usingJSON" :
+		import json
+		with open(configFile, 'r') as rp:
+			config = json.load(rp)
+	else:
+		import yaml
+		with open(configFile, 'r') as rp:
+			config = yaml.load(rp)
 
 else:
 	import yaml
 	with open(configFile, 'r') as rp:
 		config = yaml.load(rp)
+
 
 checkConfig(config)
 
