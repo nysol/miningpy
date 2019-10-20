@@ -105,6 +105,7 @@ class Node:
 
 		self.freqOther=0 # 再帰足し算するので0初期化
 		self.idListOther=[]
+
 	#def initOther(self,freq)
 	#	self.others=Node(None,None,None,freq) # 他クラスのデータを同じ構造で格納
 
@@ -161,18 +162,25 @@ class Node:
 			node.clearOutDoneFlag()
 
 	def selTopK(self,oParams,pQue):
+
 		if self.outDoneFlag:
 			return
+
 		doOutput=True
-		if oParams["maximal"] and not self.maximal:
+
+		if "maximal" in oParams and not self.maximal:
 			doOutput=False
-		if oParams["minSize"] and self.level<oParams["minSize"]:
+
+		if "minSize" in oParams and self.level<oParams["minSize"]:
 			doOutput=False
-		if oParams["minLen"] and self.length<oParams["minLen"]:
+
+		if "minLen" in oParams and self.length<oParams["minLen"]:
 			doOutput=False
-		if oParams["maxSup"] and self.frequency>oParams["maxSup"]:
+
+		if "maxSup" in oParams and self.frequency>oParams["maxSup"]:
 			doOutput=False
-		if oParams["minPprob"] and self.pprob<oParams["minPprob"]:
+
+		if "minPprob" in oParams and self.pprob<oParams["minPprob"]:
 			doOutput=False
 
 		if doOutput:
@@ -645,9 +653,9 @@ def _readCSV_sub(iFile):
 def readCSV(iParams):
 	#data=readCSVwc(self.iParams["iFile"],self.iParams["iNames"],"xxdataR")
 	iFile=iParams["iFile"]
-	sidF=iParams["iNames"][0]
-	eidF=iParams["iNames"][1]
-	itemF=iParams["iNames"][2]
+	sidF=iParams["sid"]
+	eidF=iParams["time"]
+	itemF=iParams["item"]
 	flds="%s,%s,%s"%(sidF,eidF,itemF)
 
 	temp=Mtemp()
@@ -702,11 +710,11 @@ class Spade:
 			raise ValueError("minSupRation should be in the range 0.0-1.0.")
 
 	def __init__(self,iParams,eParams,oParams):
+
 		self.iParams=iParams
 		self.eParams=eParams
 		self.oParams=oParams
 		self.checkParams()
-
 
 	# nodeのsequence patternをリストの出力形式に格納し返す
 	# ptas: patterns
@@ -808,7 +816,6 @@ class Spade:
 						for line in eachRule[0]:
 							oCSVpats.write(line)
 
-
 					if oCSVstats!=None:
 						for line in eachRule[1]:
 							oCSVstats.write(line)
@@ -816,8 +823,6 @@ class Spade:
 					if oCSVoccs!=None:
 						for line in eachRule[2]:
 							oCSVoccs.write(line)
-
-
 
 			if oCSVpats!=None:
 				oCSVpats.close()

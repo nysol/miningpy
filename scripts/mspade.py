@@ -10,20 +10,25 @@ from nysol.util.mmkdir import mkDir
 helpMSG="""
 概要) 
 内容) 
-書式) mspade.py i= f= O= [c=] [cf=] [minSup=|minSupProb=] [maxSize=] 
+書式) mspade.py i= sid= item= time= O= [c=] [class=] [minSup=|minSupProb=] [maxSize=] 
                 [maxLen=] [minGap=] [maxGap=] [maxWin=] 
-                ["topk=] [minSize=] [minLen=] [maxSup=] [minPprob=] 
-                [oPats=] [oStats=] [oOccs=] [-maximal] [-help]
+                [topk=] [minSize=] [minLen=] [maxSup=] [minPprob=] 
+                [oPats=] [oStats=] [oOccs=] [-maximal] [-(-)help]
 
+	tid=>sid,item,time,cls
   i parameter
-    i=
-    f=
+    i= 必須
+    sid= 必須　
+    item= 必須 
+    time= 必須 
+		class=
+    csid= 
     c=
-    cf= 
+
   e parameter
     minSup=
     minSupProb=
-    maxSize=
+    maxSize= 必須
     maxLen=
     minGap=
     maxGap=
@@ -35,7 +40,7 @@ helpMSG="""
     minLen=
     maxSup=
     minPprob=
-    O=
+    O= 必須
 
   その他
     -help : ヘルプの表示(2)
@@ -52,15 +57,18 @@ helpMSG="""
 
 
 paraList=[
-	["i=","f=","c=","cf="] ,# ipara
+	["i=","c=","sid=","item=","time=","class=","csid="] ,# ipara
 	["minSup=","minSupProb=","maxSize=","maxLen=","minGap=","maxGap=","maxWin="] ,# epara
 	["-maximal","O=","topk=","minSize=","minLen=","maxSup=","minPprob="] # opara
 ]
 paraType={
 	"i=":"str",
-	"f=":"fldstr",
 	"c=":"str",
-	"cf=":"fldstr",
+	"sid=":"str",
+	"item=":"str",
+	"time=":"str",
+	"class=":"str",
+	"csid=":"str",
 	"minSup=":"int",
 	"minSupProb=":"float",
 	"maxSize=":"int",
@@ -83,13 +91,12 @@ paraType={
 
 paraconvList={
 	"i=":"iFile",
-	"f=":"iNames",
 	"c=":"cFile",
-	"cf=":"cNames",
+	"class=":"cNames",
 	"-maximal":"maximal"
 }
 
-if "-help" in sys.argv:
+if "-help" in sys.argv or "--help" in sys.argv:
 	print(helpMSG)
 	exit()
 
@@ -97,10 +104,7 @@ flat =[]
 for para in paraList:
 	flat.extend(para)	
 
-
-
-
-args=margs.Margs(sys.argv,",".join(flat),"i=,f=")
+args=margs.Margs(sys.argv,",".join(flat),"i=,sid=,item=,time=,maxSize=,O=")
 ##make パラメータ
 
 
@@ -119,7 +123,7 @@ for p in paraList[0] :
 		val = args.float(p)	
 	elif paraType[p] == "bool":
 		val = args.bool(p)	
-		
+
 	if p in paraconvList :
 		iParams[paraconvList[p]] = val
 	else:
@@ -175,6 +179,8 @@ for p in paraList[2] :
 
 
 spade=mm.Spade(iParams,eParams,oParams)
+
+
 rules=spade.run()
 
 

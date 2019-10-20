@@ -65,32 +65,10 @@ class AlphabetIndex(object):
 
 
 
-	def enumSeqpatterns(self,name,data) :
+	def enumSeqpatterns(self,name,data,eParams,oParams) :
 
 		datas={name:data}
 		iParams={ "iData":datas }
-		eParams={
-			"minSup":5,        # 最小サポート(件数)
-			"minSupProb":None, # 最小サポート(確率) minSupがNoneでなければminSup優先
-			"maxSize":4,       # パターンを構成する総アイテム数の上限
-			"maxLen":3,        # パターンを構成する総エレメント数の上限
-			"minGap":None,     # エレメント間最小ギャップ長
-			"maxGap":None,     # エレメント間最大ギャップ長
-			"maxWin":4         # 全体のマッチ幅最大長
-		}
-		oParams={
-			"rule":False,        # 未実装
-			"maximal":False,     # 極大パターンのみ選択
-			"topk":10,           # 上位ルール
-			"minSize":None,      # maxSizeの最小版
-			"minLen":None,       # maxLenの最小版
-			"maxSup":None,       # minSupの最大版
-			"minPprob":None,      # 最小事後確率
-			#"minPprob":0.7,      # 最小事後確率
-			"oPats":"./xxoutOpats",# 出現出力ファイル(Noneで出力しない)
-			"oStats":"./xxoutOstats",# 出現出力ファイル(Noneで出力しない)
-			"oOccs":"./xxoutOccs"  # 出現出力ファイル(Noneで出力しない)
-		}
 		spade=mm.Spade(iParams,eParams,oParams)
 		rules=spade.run()
 		return rules
@@ -176,7 +154,6 @@ class AlphabetIndex(object):
 
 		self.sequenceIndexfeatures = []
 
-
 		for i, sequence in enumerate(self.ds.sequences):
 
 			indexedSequence=[]
@@ -192,8 +169,7 @@ class AlphabetIndex(object):
 					indexedElements.append([time,list(indexedItemset)])
 				indexedSequence.append([sid,indexedElements])
 
-
-			rules = self.enumSeqpatterns(sequence.fldname,indexedSequence)
+			rules = self.enumSeqpatterns(sequence.fldname,indexedSequence,sequence.eParams,sequence.oParams)
 
 			sfstk =	[ [] for _ in range(sequence.iSize) ]
 			for ii , vv  in enumerate(spaces[base_i:base_i+sequence.aSize]):
@@ -458,7 +434,7 @@ class AlphabetIndex(object):
 ##########
 # entry point
 argv=sys.argv
-if len(argv)!=2:
+if not ( len(argv)==2 or len(argv)==3 ):
 	print("m2bonsai.py ")
 	print("%s 設定ファイル(json)"%argv[0])
 	exit()
@@ -469,12 +445,20 @@ if len(argv)!=2:
 #sys.path.append(os.path.dirname(configFile))
 #config=importlib.import_module(os.path.basename(configFile).replace(".py",""))
 
+	 
+
 configFile=os.path.expanduser(argv[1])
 
 
-import json
-with open(configFile, 'r') as rp:
-	config = json.load(rp)
+if argv[2] == "-usingJSON" :
+	import json
+	with open(configFile, 'r') as rp:
+		config = json.load(rp)
+
+else:
+	import yaml
+	with open(configFile, 'r') as rp:
+		config = yaml.load(rp)
 
 checkConfig(config)
 

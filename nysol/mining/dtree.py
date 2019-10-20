@@ -37,8 +37,6 @@ class dtree(object):
 				self.y_minClassSize=v
 
 	def objectiveImpurity(self,spaces):
-		print("Impurity")
-		print(spaces)
 
 		params=self.config
 		params["min_impurity_decrease"]=spaces[0]
@@ -55,8 +53,7 @@ class dtree(object):
 			# ベイズ最適化による最適min_impurity_decreaseの探索(CVによる推定)
 			spaces = [(0.0,0.1, 'uniform')]
 			#res = gp_minimize(self.objectiveImpurity, spaces, acq_func="EI", n_calls=10, random_state=11)
-			print("build")
-			print(spaces)
+
 			res = gp_minimize(self.objectiveImpurity, spaces, n_calls=10, random_state=11)
 			#print(res.fun) # 目的関数値(accuracy*(-1))
 			#print(res.x) # min_impurity_decrease 最適値

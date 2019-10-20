@@ -1,0 +1,20 @@
+{
+  dataset: { 
+    ##### サンプルID (iFile,traFile,seqFile共通)
+    idFld: id, 
+    ##### 基本データセット
+    iFile: {
+      ## ファイル名
+      name: yaki.csv,
+      ## カテゴリ項目名
+      cFlds: [お茶漬け,カルビ,タン,キモ],
+      ## 目的変数項目名
+      yFld: wine,
+      ## 目的変数タイプ(r:regression,c:classification
+      yType: c
+    }
+  },
+  dTree : { max_depth: 2 },
+  oPath : result0
+}
+

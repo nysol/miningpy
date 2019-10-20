@@ -1,0 +1,61 @@
+{
+  dataset: {
+    ##### サンプルID (iFile,traFile,seqFile共通)
+    idFld: id,
+    ##### 基本データセット
+    iFile: {
+      ## ファイル名
+      name: data/crx2.csv,
+      ## カテゴリ項目名
+      cFlds: [d1,d2,d3],
+      nFlds: [n1],
+      iFlds: [i1,i2],
+      iSize: [2,3],
+      yFld: class,
+      yType: c
+    },
+    traFiles: [
+      {
+        name: data/crx_tra1.csv,
+        iSize: 3,
+        fldname: trafld1
+      },
+      {
+        name: data/crx_tra2.csv,
+        iSize: 4,
+        fldname: trafld2
+      }
+    ],
+    seqFiles: [
+      {
+        name: data/crx2_seq1.csv,
+        fields: "id,time,item",
+        iSize: 2,
+        fldname: seqfld1,
+        minSup: 5, 
+        minSupProb: null, 
+        maxSize: 4,       
+        maxLen: 3,        
+        minGap: null,     
+        maxGap: null,     
+        maxWin: 4         
+      },
+      {
+        name: data/crx2_seq2.csv,
+        fields: "id,time,item",
+        iSize: 3,
+        fldname: seqfld2,
+        minSup: 5,        
+        minSupProb: null, 
+        maxSize: 4,       
+        maxLen: 3,        
+        minGap: null,     
+        maxGap: null,     
+        maxWin: 4         
+      }
+    ]
+  },
+  dTree: { max_depth: 10 },
+  oPath: result_crx
+}
+

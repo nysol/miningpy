@@ -3,6 +3,8 @@
 import os
 import sys
 import nysol.mcmd as nm
+from nysol.util.mtemp import Mtemp
+
 import numpy as np
 
 # category変数のdummy変数化
@@ -133,6 +135,29 @@ class Sequence(object):
 			self.fldname=config["fldname"]
 		else:
 			self.fldname=config["name"]
+
+		self.eParams={}
+		self.oParams={}
+
+		self.temp = Mtemp()
+
+		self.eParams["maxSize"] = 2
+		self.oParams["topk"] = 10
+		self.oParams["oPats"]  = self.temp.file()
+		self.oParams["oStats"] = self.temp.file()
+		self.oParams["oOccs"]  = self.temp.file()
+
+
+		# epara
+		for para in ['minSup','minSupProb','maxSize','maxLen' ,'minGap','maxGap','maxWin']: 
+			if para in config:
+				self.eParams[para] = config[para]
+		# opara
+		
+		for para in ['maximal','topk','minSize','minLen' ,'maxSup','minPprob']: 
+			if para in config:
+				self.oParams[para] = config[para]
+
 
 		self.iSize=int(config["iSize"])
 		flds=config["fields"].split(",")
