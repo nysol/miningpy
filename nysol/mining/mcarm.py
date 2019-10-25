@@ -7,7 +7,6 @@ import copy
 import nysol.mining.mspade as mm
 from nysol.util.mmkdir import mkDir
 
-
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -360,7 +359,6 @@ class AlphabetIndex(object):
 		self.indexing(space) # self.itemIndex: item,itemsetデータをxでindexingする
 
 		# np.hstackするためのダミー列作成
-		print(len(self.ds.y))
 		self.x=np.empty((len(self.ds.y),1))
 
 		##2 データセットの結合
@@ -445,8 +443,6 @@ if not ( len(argv)==2 or len(argv)==3 ):
 #sys.path.append(os.path.dirname(configFile))
 #config=importlib.import_module(os.path.basename(configFile).replace(".py",""))
 
-	 
-
 configFile=os.path.expanduser(argv[1])
 
 if len(argv) > 2:
@@ -464,7 +460,7 @@ else:
 	with open(configFile, 'r') as rp:
 		config = yaml.load(rp)
 
-
+	
 checkConfig(config)
 
 odir = config["oPath"]
