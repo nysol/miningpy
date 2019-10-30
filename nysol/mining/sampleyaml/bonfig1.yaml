@@ -10,7 +10,7 @@ dataset:
     - age
     name: yakic.csv
     yFld: wine
-    yType: c
+    yType: d
   idFld: id
 oPath: result1
 rTree:

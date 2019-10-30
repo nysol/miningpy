@@ -37,7 +37,7 @@ class Category(object):
 		self.data=np.zeros((len(data), len(self.num2str)))
 		for i,s in enumerate(data):
 			if s in self.str2num:
-				self.data[i,self.str2num[s]]=1.0
+				self.data[i,self.str2num[s]]=-1.0
 
 	def _summary(self):
 		print("self.name:",self.name)

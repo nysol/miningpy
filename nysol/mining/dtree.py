@@ -60,7 +60,7 @@ class dtree(object):
 		
 			# 最適枝刈り度のセット
 			params["min_impurity_decrease"]=res.x[0]
-			self.min_impurity_decrease = res.x[0]
+			self.min_impurity_decrease = res.x[0] # << 変数名変える
 
 
 		self.model=tree.DecisionTreeClassifier(**params)
@@ -126,12 +126,12 @@ class dtree(object):
 					if len(lblval0) > 1:
 						if lblval[-2] == "<=":
 							nn = "_".join(lblval0[0:-1])							
-							newlable = 'label="%s != %s\\\\n%s\\\\n%s\\\\n%s\\\\n%s"] ;'%(nn,lblval0[-1],lbldata[1],lbldata[2],lbldata[3],lbldata[4])
+							newlable = 'label="%s == %s\\\\n%s\\\\n%s\\\\n%s\\\\n%s"] ;'%(nn,lblval0[-1],lbldata[1],lbldata[2],lbldata[3],lbldata[4])
 							newdot.append(re.sub(r'label=".*"] ;',newlable,line))
 
 						else:
 							nn = "_".join(lblval0[0:-1])							
-							newlable = 'label="%s == %s\\\\n%s\\\\n%s\\\\n%s\\\\n%s"] ;'%(nn,lblval0[-1],lbldata[1],lbldata[2],lbldata[3],lbldata[4])
+							newlable = 'label="%s != %s\\\\n%s\\\\n%s\\\\n%s\\\\n%s"] ;'%(nn,lblval0[-1],lbldata[1],lbldata[2],lbldata[3],lbldata[4])
 							newdot.append(re.sub(r'label=".*"] ;',newlable,line))
 					else:
 						newdot.append(line)

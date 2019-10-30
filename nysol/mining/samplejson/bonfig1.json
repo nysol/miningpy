@@ -6,7 +6,7 @@
 			"cFlds":["お茶漬け","カルビ","タン"],
 			"nFlds":["age"],
 			"yFld":"wine",
-			"yType":"c"
+			"yType":"d"
 		}
 	},
 	"dTree":{	"max_depth":2},

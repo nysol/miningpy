@@ -6,6 +6,7 @@ import numpy as np
 import copy
 import nysol.mining.mspade as mm
 from nysol.util.mmkdir import mkDir
+from rtree import rtree
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -15,9 +16,10 @@ from dtree import dtree
 from dataset import dataset
 
 def checkConfig(config):
-
+	print(config)
+	print(config["dataset"]["iFile"]["name"])
 	if not os.path.exists(config["dataset"]["iFile"]["name"]):
-		raise Exception("## ERROR: file not found: %s"%config.iFile)
+		raise Exception("## ERROR: file not found: %s"%config["dataset"]["iFile"]["name"])
 
 	# iFldsとiSizeのサイズが異なればエラー
 
@@ -32,7 +34,16 @@ class AlphabetIndex(object):
 		#self.num2alpha=[] # num=>alphabet
 		#self.alpha2num={} # alphabet=>num
 		self.spaces=[] # 探索空間
-		self.model=dtree(config["dTree"])
+		#self.model=dtree(config["dTree"])
+
+		if config["dataset"]["iFile"]["yType"]=="r":
+			self.model=rtree(config["rTree"])
+		elif config["dataset"]["iFile"]["yType"]=="d":
+			self.model=dtree(config["dTree"])
+		else:
+			raise ValueError("unknown yType:%s"%(config["dataset"]["iFile"]["yType"]))
+
+
 		self.features=[]
 		self.featuresALL = []
 		self.optimal_score=None
@@ -110,7 +121,7 @@ class AlphabetIndex(object):
 			for j,alpha in enumerate(item.data):
 				k=spaces[base_i+item.alpha2num[alpha]]
 				# alphabet=>index置換: あるitem変数のalphabetをspaces[i]に置換
-				self.itemIndex[i][j][k]=1.0 # iは変数,jはサンプル,kはindex
+				self.itemIndex[i][j][k]=-1.0 # iは変数,jはサンプル,kはindex
 
 			sfstk =	[ [] for _ in range(item.iSize) ]
 			for ii , vv  in enumerate(spaces[base_i:base_i+item.aSize]):
@@ -132,7 +143,7 @@ class AlphabetIndex(object):
 			for j, items in enumerate(itemset.data):
 				for alpha in items:
 					k=spaces[base_i+itemset.alpha2num[alpha]]
-					self.itemsetIndex[i][j][k]=1.0
+					self.itemsetIndex[i][j][k]=-1.0
 
 			sfstk =	[ [] for _ in range(itemset.iSize) ]
 			for ii , vv  in enumerate(spaces[base_i:base_i+itemset.aSize]):
@@ -197,7 +208,7 @@ class AlphabetIndex(object):
 					if pre != vv[1]:
 						pos+=1 
 
-					self.sequenceIndex[-1][idmap[vv[2]]][pos] = 1.0
+					self.sequenceIndex[-1][idmap[vv[2]]][pos] = -1.0
 					pre = vv[1]
 
 				name = v[0][0][0]

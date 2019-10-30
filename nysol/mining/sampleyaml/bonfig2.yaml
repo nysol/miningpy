@@ -1,0 +1,17 @@
+dTree:
+  max_depth: 2
+dataset:
+  iFile:
+    cFlds:
+    - "タン"
+    - "カルビ"
+    - "性別"
+    nFlds:
+    - "年令"
+    name: yakir.csv
+    yFld: "売上"
+    yType: r
+  idFld: id
+oPath: resultr1
+rTree:
+  max_depth: 3

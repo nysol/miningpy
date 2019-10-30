@@ -1,0 +1,16 @@
+{
+	"dataset":{
+		"idFld":"id",
+		"iFile":{
+			"name":"yakir.csv",
+			"cFlds":["タン","カルビ","性別"],
+			"nFlds":["年令"],
+			"yFld":"売上",
+			"yType":"r"
+		}
+	},
+	"dTree":{ "max_depth":3 },
+	"rTree":{ "max_depth":3 },
+	"oPath":"resultr1"
+}
+
