@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# debug利用
-from pprint import pprint as pprint
+
 import collections
 import math
 import glob
@@ -48,13 +47,6 @@ def pat2strR(pat):
 	for ele in s:
 		sss.append("{"+" ".join(ele)+"}")
 	return " ".join(sss)
-#pat=(0,"A",1,"B")
-#print(pat)
-#print(pat2strR(pat))
-#pat=(0,"A",1,"B",2,"C")
-#print(pat)
-#print(pat2strR(pat))
-#exit()
 
 # 1行1-itemになるようにフォーマットに変換
 # ex. (0,"A",1,"B",2,"C") => [["A"],["B","C"]]
@@ -73,17 +65,16 @@ def pat2arr(pat):
 			ss.append(ele)
 	s.append(ss)
 	return s
-#pat=(0,"A",1,"B",2,"C")
-#print(pat)
-#print(pat2arr(pat))
-#exit()
 
 
 # latticeを構成するノードクラス
 class Node:
+
 	def __init__(self,lattice,level,pattern,freq):
+
 		self.lattice=lattice # 親に戻るため
 		self.level=level # ボトム=0とした時のレベル k-sequenceのkに該当する
+
 		# sequenceパターン
 		# 辞書キーに使うのでタプルで表現する
 		# ex. D>BF>A => ("D",1,"B",2,"F",1,"A")
@@ -97,35 +88,40 @@ class Node:
 		self.item2node={} # 1-sequenceでのみ利用
 		self.outDoneFlag=False # show関数で表示時に利用するフラグ
 		self.maximal=False # maximal=Trueの時のみセットされる
+
 		c=0
 		for item in pattern:
 			if item==1:
 				c+=1
+
 		self.length=c+1
 
 		self.freqOther=0 # 再帰足し算するので0初期化
 		self.idListOther=[]
 
-	#def initOther(self,freq)
-	#	self.others=Node(None,None,None,freq) # 他クラスのデータを同じ構造で格納
-
 	# self.patternと同じ長さのnode.patternのpfrefixが同じか判定
 	# samePrefix(A>B,A>B>C)=True, samePrefix(A>B,A,B>C)=False
 	# len(self.pattern)>len(node.pattern)の時はエラー
 	def samePrefix(self,node):
+
 		for i,item in enumerate(self.pattern):
 			if node.pattern[i]!=item:
 				return False
+
 		return True
 
 	def getNodes(self,targetLevel,nodes):
+
 		if self.level==targetLevel:
 			nodes.append(self)
+
 		for node in self.children:
 			node.getNodes(targetLevel,nodes)
 
 	def postCal(self,tSize,oSize):
+
 		self.pprob=float(self.frequency*tSize)/float(self.frequency*tSize+self.freqOther*oSize)
+
 		for node in self.children:
 			node.postCal(tSize,oSize)
 
@@ -135,28 +131,36 @@ class Node:
 	# simple=Falseの場合は、階層整形,パターン,support,idListを出力
 	# redundant=Trueにすると、laticeの接続関係を全出力。
 	def show(self,level=None,simple=False,redundant=False):
+
 		if not redundant and self.outDoneFlag:
 			return
+
 		if level==None or self.level==level:
 			if simple:
 				print("%s,%d"%(pat2str(self.pattern),self.frequency))
 			else:
 				print("  "*self.level, "%s(%d,%d,%d,%d)"%(pat2str(self.pattern),self.level,self.length,self.frequency,self.freqOther),self.idList,self.idListOther)
+
 		self.outDoneFlag=True
+
 		if len(self.children)==0:
 			return
+
 		for node in self.children:
 			node.show(level,simple,redundant)
 
 	def getMaximalCandidate(self,patterns):
+
 		if len(self.children)==0:
 			if self.level not in patterns:
 				patterns[self.level]=set()
 			patterns[self.level].add(self)
+
 		for node in self.children:
 			node.getMaximalCandidate(patterns)
 
 	def clearOutDoneFlag(self):
+
 		self.outDoneFlag=False
 		for node in self.children:
 			node.clearOutDoneFlag()
@@ -167,7 +171,7 @@ class Node:
 			return
 
 		doOutput=True
-
+		
 		if "maximal" in oParams and not self.maximal:
 			doOutput=False
 
@@ -177,7 +181,7 @@ class Node:
 		if "minLen" in oParams and self.length<oParams["minLen"]:
 			doOutput=False
 
-		if "maxSup" in oParams and self.frequency>oParams["maxSup"]:
+		if "maxSup" in oParams  and self.frequency>oParams["maxSup"]:
 			doOutput=False
 
 		if "minPprob" in oParams and self.pprob<oParams["minPprob"]:
@@ -186,9 +190,8 @@ class Node:
 		if doOutput:
 			# nodeをpriority queueに入れる
 			node=(self.level,self.length,self.frequency,self.pattern,self)
-			if "topk" in oParams and oParams["topk"] != None and len(pQue)>=oParams["topk"]:
-				#print(pQue)
-				#print(node)
+
+			if "topk" in oParams and len(pQue)>=oParams["topk"]:
 				heapq.heappushpop(pQue,node)
 			else:
 				heapq.heappush(pQue,node)
@@ -200,9 +203,10 @@ class Node:
 
 	# pattern全出力(Rの結果との比較のため)
 	def outputAll(self,oCSV):
+
 		if self.outDoneFlag:
 			return
-		#print(self.pattern,pat2str(self.pattern),pat2strR(self.pattern))
+
 		oCSV.write([pat2strR(self.pattern),self.frequency])
 		self.outDoneFlag=True
 		for node in self.children:
@@ -215,18 +219,20 @@ def is_subseq(x, y):
 # Latticeクラス
 class Lattice:
 	def __init__(self,freq,eParams):
+
 		self.tSize=freq # そのクラスのtransactionサイズ
 		self.oSize=0    # 他クラスのtransactionサイズ
-		self.minSup=eParams["minSup"]
-		if self.minSup==None:
+
+		if "minSup" in eParams:
+			self.minSup=eParams["minSup"]
+		else :
 			self.minSup=math.ceil(freq*eParams["minSupProb"])
+
 		# latticeボトムノードの登録
 		self.root=Node(self,0,(0,),freq)
+
 		self.eParams=eParams
 
-	#def initOther(self,freq):
-	#	self.oSize=freq # 他クラスのtransactionサイズ
-		#self.root.initOther(freq)
 
 	# 1-sequenceの登録
 	# dataはsid+eid(時刻順)+itemでsortingされていることが前提
@@ -258,6 +264,7 @@ class Lattice:
 					self.root.children.append(Node(self,1,(item,),freq))
 					self.root.item2node[item]=self.root.children[-1]
 
+
 	# 2-sequenceの登録
 	# dataはsid+eid(時刻順)+itemでsortingされていることが前提
 	def addTwoPattern(self,data,eParams,other=False):
@@ -268,17 +275,16 @@ class Lattice:
 
 		counter={} # 一旦ここに件数カウント結果を入れる
 		idList={} # 2-sequenceが出現する(sid,eid)ペア(A>BならA,>,BがキーでBの出現位置(sid,eid)のみ保持)
+
 		for sid,sequence in data:
 			# sequenceデータを１次元配列に変換 要素は(item,time)
+			# seq [('D', 0), ('A', 1), ('B', 1), ('A', 2), ('B', 2), ('F', 2), ('A', 3), ('D', 3), ('F', 3)]
 			seq=[]
 			for eid,element in sequence:
 				for item in element:
 					if item in freqOnePattern:
 						seq.append((item,eid))
 
-			#print("seq",seq)
-			# seq [('D', 0), ('A', 1), ('B', 1), ('A', 2), ('B', 2), ('F', 2), ('A', 3), ('D', 3), ('F', 3)]
-			
 			done=set()
 			for i in range(len(seq)-1):
 				for j in range(i+1,len(seq)):
@@ -287,15 +293,20 @@ class Lattice:
 					item2=seq[j][0]
 					time2=seq[j][1]
 					token=1
-					if eParams["minGap"]!=None and time2-time1<eParams["minGap"]:
+
+					if "minGap" in eParams and time2-time1<eParams["minGap"]:
 						continue
-					if eParams["maxGap"]!=None and time2-time1>eParams["maxGap"]:
+
+					if "maxGap" in eParams and time2-time1>eParams["maxGap"]:
 						continue
+
 					if time1==time2:
 						token=2
+
 					if item1 not in counter:
 						counter[item1]={}
 						idList[item1]={}
+
 					if item2 not in counter[item1]:
 						counter[item1][item2]={}
 						idList[item1][item2]={}
@@ -303,10 +314,12 @@ class Lattice:
 					if token not in counter[item1][item2]:
 						counter[item1][item2][token]=0
 						idList[item1][item2][token]=[]
+
 					#if item1+item2+str(token) not in done:
 					if str(item1)+str(item2)+str(token) not in done:
 						counter[item1][item2][token]+=1
 						done.add(str(item1)+str(item2)+str(token))
+
 					#if (sid,time1,time2) not in idList[item1][item2][token]: ##### 遅い
 					idList[item1][item2][token].append((sid,time1,time2)) # idListは全てを記録
 
@@ -321,9 +334,6 @@ class Lattice:
 					if item1 in counter and item2 in counter[item1] and token in counter[item1][item2]:
 						node2.freqOther+=counter[item1][item2][token]
 						node2.idListOther+=idList[item1][item2][token]
-					#else:
-					#	node2.freqOther=0
-					#	node2.idListOther=[]
 
 		# 頻出な2-sequenceの件数(Node.frequency)の更新
 		else:
@@ -337,8 +347,6 @@ class Lattice:
 							newNode=Node(self,node1.level+1,joinedPattern,freq)
 							if newNode.length<=eParams["maxLen"]:
 								newNode.idList=idList[item1][item2][token]
-								#newNode.parent1=node1
-								#newNode.parent2=node2
 								# level1 => level2リンク
 								node1.children.append(newNode)
 
@@ -399,14 +407,11 @@ class Lattice:
 	# 2つのatomをsupportするidListを時間joinする
 	# other=Trueの時は、idListOtherに基づいてjoin
 	def temporalJoin(self,candidate,other=False):
+
 		joinType=candidate[0]
 		atom1=candidate[1]
 		atom2=candidate[2]
 		joinedPattern=candidate[3]
-		#print("### temporalJoin",pat2str(atom1.pattern),"V",pat2str(atom2.pattern),"=",pat2str(joinedPattern))
-		#print("### temporalJoin",atom1.pattern,"V",atom2.pattern,"=",joinedPattern)
-		#print("atom1=",atom1,atom1.idList)
-		#print("atom2=",atom2,atom2.idList)
 
 		idList=[]
 		i1=0
@@ -444,70 +449,80 @@ class Lattice:
 				if eid1>=eid2:
 					i2+=1
 					continue
+
 				else:
-					if self.eParams["minGap"]==None or eid2-eid1>=self.eParams["minGap"]:
-						if self.eParams["maxGap"]==None or eid2-eid1<=self.eParams["maxGap"]:
+
+					if not "minGap" in self.eParams or eid2-eid1 >= self.eParams["minGap"]:
+
+						if not "maxGap" in self.eParams or eid2-eid1 <= self.eParams["maxGap"]:
+
 							if other:
 								startEid=atom1.idListOther[i1][1] # 先頭マッチ時刻,atom2でも同じ
 							else:
 								startEid=atom1.idList[i1][1] # 先頭マッチ時刻,atom2でも同じ
-							#print("####",eParams["maxWin"],">=",eid2-startEid+1,eid2,startEid)
-							if self.eParams["maxWin"]==None or eid2-startEid+1<=self.eParams["maxWin"]:
+
+							if not "maxWin" in self.eParams or eid2-startEid+1 <= self.eParams["maxWin"]:
 								if (sid1,startEid,eid2) not in idList: ##### 遅い(なくても動く)
 									idList.append((sid1,startEid,eid2)) # sid1はsid2でも同じ
-					#i1+=1
 					i2+=1
-			else:             # element結合(joinType=="e") gapのチェック必要なし
+
+			else:             
+				# element結合(joinType=="e") gapのチェック必要なし
 				if eid1<eid2:
 					i1+=1
 					continue
+
 				elif eid1>eid2:
 					i2+=1
 					continue
+
 				else: #eid1==eid2
 					if other:
 						startEid=atom1.idListOther[i1][1] # 先頭マッチ時刻,atom2でも同じ
 					else:
 						startEid=atom1.idList[i1][1] # 先頭マッチ時刻,atom2でも同じ
-					if self.eParams["maxWin"]==None or eid1-startEid+1<=self.eParams["maxWin"]:
+					if not "maxWin" in self.eParams or eid1-startEid+1<=self.eParams["maxWin"]:
 						idList.append((sid1,startEid,eid1)) # sid1,eid1はsid2,eid2でも同じ
 					i1+=1
 					i2+=1
-		#print("joined idList=",idList)
+
 		return idList
 
 	# idList のsidのunique数をカウントする
 	def support(self,idList):
+
 		counter=set()
 		for line in idList:
 			counter.add(line[0])
+
 		return len(counter)
 
 	# nodeと同じpatternを(k-1)-prefixに持つ子ノードを探索
 	def samePrefixNodes(self,node):
+
 		sameNodes=[]
+		
 		for child in node.children:
-			# print("spn=",node,child)
 			if node.samePrefix(child):
 				sameNodes.append(child)
+
 		return sameNodes
 
 	# atomsにはprefixを共有するsequenceが格納されている
 	def enum_sub(self,atoms,eParams):
-		#print("&&atoms=",[pat2str(atom.pattern) for atom in atoms])
+
 		freqPatterns=[] # prefixが同じpatternリストを格納する2次元配列
+
 		for i in range(len(atoms)-1):
 			atom1=atoms[i]
-			#print("############1",atom1.item)
+
 			for j in range(i,len(atoms)):
 				atom2=atoms[j]
-				#print(atom1.item,atom2.item)
 				# ２つのk0sequence atom1,atom2から結合される(k+1)-sequenceの候補を作成
 				candidates=self.joinAtoms(atom1,atom2)
+
 				# それらの候補のidListを時間joinし、support件数をカウントする
-				# print("candidates",candidates)
 				for candidate in candidates:
-					#print(candidate)
 					# atom1,atom2をtemporal joinしてcandidateのidListを作成
 					idList=self.temporalJoin(candidate)
 					freq=self.support(idList)
@@ -526,12 +541,9 @@ class Lattice:
 
 		if len(freqPatterns)>0:
 			# print("###level=",atoms[0].level,eParams["maxSize"])
-			if atoms[0].level+1<eParams["maxSize"]:
+			if atoms[0].level+1 < eParams["maxSize"]:
 				for atom in atoms:
 					nextAtoms=self.samePrefixNodes(atom)
-					# print("xx1",[pat2str(atom.pattern) for atom in nextAtoms])
-					#for add in nextAtoms:
-					#	print("add=",add)
 					self.enum_sub(nextAtoms,eParams)
 
 	# 3-sequence以上のsequenceの列挙
@@ -579,13 +591,17 @@ class Lattice:
 		self.root.postCal(tSize,oSize)
 
 	def setMaximalFlag(self):
+
 		allNodes={} # level別にmaximal候補を獲得
 		seqString={} # level別にpattern文字列を格納(tokenはカンマ)
+
 		self.root.getMaximalCandidate(allNodes)
+
 		# seqStringをセット
 		levels=sorted(list(allNodes.keys()))
 		maxLevel=max(levels)
 		minLevel=min(levels)
+
 		for level in levels:
 			patterns=""
 			for node in allNodes[level]:
@@ -594,15 +610,14 @@ class Lattice:
 			seqString[level]=patterns
 
 		# k-sequenceが(k+1)-sequenceのsub-sequenceかどうかのチェック
-		for i in range(minLevel,maxLevel): # maximalチェック対象レベル(maxLevelそのものはmaximal)
+		# maximalチェック対象レベル(maxLevelそのものはmaximal)
+		for i in range(minLevel,maxLevel): 
 			for node in allNodes[i]:
-				# print("checking node[%d]="%i,pat2str(node.pattern))
 				for j in range(i+1,maxLevel+1):
-					# print("j=",j,is_subseq(pat2str(node.pattern),seqString[j]))
 					if not is_subseq(pat2str(node.pattern),seqString[j]):
 						node.maximal=True
-						# print("maximal=",pat2str(node.pattern))
 						break
+
 		#maxLevelは全てmaximal
 		for node in allNodes[maxLevel]:
 			node.maximal=True
@@ -615,13 +630,14 @@ class Lattice:
 		self.clearOutDoneFlag()
 
 	def outputAll(self,oFile):
-		# print("pattern,frequency")
+
 		with mcsvout(f="pattern,frequency",o=oFile) as oCSV:
 			self.root.outputAll(oCSV)
 
 		self.clearOutDoneFlag()
 
 def _readCSV_sub(iFile):
+
 	data=[]
 	for block in nm.mcat(i=iFile).keyblock(k="sid",s="sid,eid%n,item",dtype={"sid":"str","eid":"int","item":"str"},otype="dict"):
 
@@ -651,36 +667,37 @@ def _readCSV_sub(iFile):
 # classが指定されている場合は、datas[class名]に各クラスのデータが格納される。
 # classが指定されていない場合は、datas["single"]にデータが格納される。
 def readCSV(iParams):
-	#data=readCSVwc(self.iParams["iFile"],self.iParams["iNames"],"xxdataR")
+
 	iFile=iParams["iFile"]
 	sidF=iParams["sid"]
 	eidF=iParams["time"]
 	itemF=iParams["item"]
-	flds="%s,%s,%s"%(sidF,eidF,itemF)
 
 	temp=Mtemp()
 	xxdatPath=temp.file()
-	# classファイルの処理
-	cFile=iParams["cFile"]
-	if cFile!=None:
-		csidF=iParams["cNames"][0]
-		classF=iParams["cNames"][1]
+	mkDir(xxdatPath)
 
-		temp=Mtemp()
-		xxdatPath=temp.file()
-		f=None
+	# classファイルの処理
+	if "cFile" in iParams:
+
+		cFile  = iParams["cFile"]
+		csidF  = iParams["cNames"][0]
+		classF = iParams["cNames"][1]
+
+		f = None
 		f<<=nm.mcut(f="%s:sid,%s:eid,%s:item"%(sidF,eidF,itemF),i=iFile)
 		f<<=nm.mdelnull(f="sid,eid,item")
 		f<<=nm.muniq(k="sid,eid,item")
 		f<<=nm.mjoin(k="sid",K=csidF,m=cFile,f="%s:class"%(classF))
 		f<<=nm.msep(s="sid,eid%n,item",d="%s/${class}"%(xxdatPath),p=True)
 		f.run()
+
 		classNames=glob.glob("%s/*"%(xxdatPath))
 		classNames=[os.path.basename(path) for path in classNames]
-		#print(classNames)	
+
 	else:
-		mkDir(xxdatPath)
-		f=None
+
+		f = None
 		f<<=nm.mcut(f="%s:sid,%s:eid,%s:item"%(sidF,eidF,itemF),i=iFile)
 		f<<=nm.mdelnull(f="sid,eid,item")
 		f<<=nm.muniq(k="sid,eid,item")
@@ -688,26 +705,45 @@ def readCSV(iParams):
 		f.run()
 		classNames=["single"]
 
+
 	datas={}
+
 	for name in classNames:
 		dataFile="%s/%s"%(xxdatPath,name)
-		#os.system("cat %s/%s"%(xxdatPath,name))
 		datas[name]=_readCSV_sub(dataFile)
-		#print(datas[name])
-		#exit()
+
 	return datas
 
 
 
 class Spade:
 
+	def _del_dictNone(self,dicdata):
+		for k, v in list(dicdata.items()):
+			if v == None:
+				dicdata.pop(k, None)
+
+
 	def checkParams(self):
-		if self.eParams["minSup"]==None and self.eParams["minSupProb"]==None:
+
+		# Noneはのぞく
+		self._del_dictNone(self.eParams)
+		self._del_dictNone(self.iParams)
+		self._del_dictNone(self.oParams)
+
+		if not "minSup" in self.eParams and not "minSupProb" in self.eParams:
 			raise ValueError("either minSup or minSupProb should be specified.")
-		if self.eParams["minSup"]!=None and self.eParams["minSup"]<1:
+
+		if "minSup" in self.eParams and self.eParams["minSup"]<1:
 			raise ValueError("minSup must be equal or greater than 1.")
-		if self.eParams["minSupProb"]!=None and (self.eParams["minSupProb"]<0.0 or self.eParams["minSupProb"]>1.0):
+
+		if "minSupProb" in self.eParams and ( self.eParams["minSupProb"] < 0.0 or self.eParams["minSupProb"] > 1.0 ):
 			raise ValueError("minSupRation should be in the range 0.0-1.0.")
+
+		#defaultセット
+		if not "maxSize" in self.eParams :
+			self.eParams["maxSize"] = 4
+
 
 	def __init__(self,iParams,eParams,oParams):
 
@@ -745,13 +781,18 @@ class Spade:
 		pats=[]
 		stats=[]
 		occs=[]
+
 		for node in nodes:
+
 			patArr=pat2arr(node.pattern)
+
 			# [['D'], ['C'], ['F', 'D']]
 			stats.append([name,self.pid,node.level,node.length,node.frequency,node.freqOther,node.pprob])
+
 			for eid,element in enumerate(patArr):
 				for item in element:
 					pats.append([name,self.pid,eid,item])
+
 			if "oOccs" in oParams:
 				sidPrev=None
 				for line in node.idList:
@@ -760,119 +801,125 @@ class Spade:
 						continue
 					occs.append([name,self.pid,sid])
 					sidPrev=sid
+
 			self.pid+=1
 		
 		return (pats,stats,occs)
 
 	def writeCSV(self,rules,oParams):
-		# 出力
-		if "rule" in self.oParams and self.oParams["rule"]==None:
-			pass
-		else:
-			sigleFlag = False
-			if len(rules) == 1:
-				sigleFlag = True
 
-			oCSVpats=None
-			oCSVstats=None
-			oCSVoccs=None
-			
-			if sigleFlag:
-				if oParams["oPats"]!=None:
+		# 出力
+		if "rule" in oParams:
+			pass
+
+		else:
+
+			oCSVpats  = None
+			oCSVstats = None
+			oCSVoccs  = None
+
+			if len(rules) == 1:
+
+				if "oPats" in oParams:
 					oCSVpats=mcsvout(f="pid,eid,item",o=oParams["oPats"])
-				if "oStats" in self.oParams and oParams["oStats"]!=None:
+
+				if "oStats" in oParams:
 					oCSVstats=mcsvout(f="pid,size,length,frequency",o=oParams["oStats"])
-				if oParams["oOccs"]!=None:
+
+				if "oOccs" in oParams:
 					oCSVoccs=mcsvout(f="pid,sid",o=oParams["oOccs"])
 
-					for eachRule in rules.values():
+				for eachRule in rules.values():
 	
-						if oCSVpats!=None:
-							for line in eachRule[0]:
-								oCSVpats.write(line[1:])
+					if oCSVpats:
+						for line in eachRule[0]:
+							oCSVpats.write(line[1:])
 
+					if oCSVstats:
+						for line in eachRule[1]:
+							oCSVstats.write(line[1:5])
 
-						if oCSVstats!=None:
-							for line in eachRule[1]:
-								oCSVstats.write(line[1:5])
+					if oCSVoccs:
+						for line in eachRule[2]:
+							oCSVoccs.write(line[1:])
 
-						if oCSVoccs!=None:
-							for line in eachRule[2]:
-								oCSVoccs.write(line[1:])
-			
-			
 			else :
-				if oParams["oPats"]!=None:
+
+				if "oPats" in oParams:
 					oCSVpats=mcsvout(f="class,pid,eid,item",o=oParams["oPats"])
-				if "oStats" in self.oParams and oParams["oStats"]!=None:
+
+				if "oStats" in oParams:
 					oCSVstats=mcsvout(f="class,pid,size,length,frequency,freqOther,pprob",o=oParams["oStats"])
-				if oParams["oOccs"]!=None:
+
+				if "oOccs" in oParams:
 					oCSVoccs=mcsvout(f="class,pid,sid",o=oParams["oOccs"])
 
 				
 				for eachRule in rules.values():
 
-					if oCSVpats!=None:
+					if oCSVpats:
 						for line in eachRule[0]:
 							oCSVpats.write(line)
 
-					if oCSVstats!=None:
+					if oCSVstats:
 						for line in eachRule[1]:
 							oCSVstats.write(line)
 
-					if oCSVoccs!=None:
+					if oCSVoccs:
 						for line in eachRule[2]:
 							oCSVoccs.write(line)
 
-			if oCSVpats!=None:
+			if oCSVpats:
 				oCSVpats.close()
-			if oCSVstats!=None:
+
+			if oCSVstats:
 				oCSVstats.close()
-			if oCSVoccs!=None:
+
+			if oCSVoccs:
 				oCSVoccs.close()
+
 
 	def run(self):
 
 		###### データのセット
 		# listデータ(優先)
-		#if self.iParams["iData"]!=None:
-
 		if "iData" in self.iParams:
 			datas=self.iParams["iData"]
 
 		# CSVデータ
-		elif self.iParams["iFile"]!=None:
+		elif "iFile" in self.iParams["iFile"]:
 			if os.path.exists(self.iParams["iFile"]):
 				datas=readCSV(self.iParams)
 			else:
 				raise ValueError("file not found: %s"%self.iParams["iFile"])
+
 		else:
 			raise ValueError("either iData or iFile should be specified for input data.")
 
-		
 		###### 列挙
 		lattice={}
 		for tName in datas.keys():
 			# 対象クラスのsequence列挙
 			lattice[tName]=Lattice(len(datas[tName]),self.eParams)
 			lattice[tName].addOnePattern(datas[tName],self.eParams)
-			if "maxSize" in self.eParams and self.eParams["maxSize"] !=None and self.eParams["maxSize"]>=2:
+
+			if "maxSize" in self.eParams and self.eParams["maxSize"]>=2:
 				lattice[tName].addTwoPattern(datas[tName],self.eParams)
 				if self.eParams["maxSize"]>=3:
 					lattice[tName].enum(self.eParams)
-
 
 			# 対象クラス以外のクラスのsequence列挙
 			for oName in datas.keys():
 				if tName==oName:
 					continue
+
 				lattice[tName].root.freqOther+=len(datas[oName])
 				lattice[tName].addOnePattern(datas[oName],self.eParams,other=True)
+
 				if self.eParams["maxSize"]>=2:
 					lattice[tName].addTwoPattern(datas[oName],self.eParams,other=True)
 					if self.eParams["maxSize"]>=3:
 						lattice[tName].countOther(self.eParams)
-
 
 			# 列挙後の計算
 			lattice[tName].postCal()
@@ -882,25 +929,25 @@ class Spade:
 		rules={}
 		self.pid=0
 		for name in lattice.keys():
-			#print(name)
-			#lattice[name].show()
-			#lattice[name].show(simple=False,redundant=True)
-			#exit()
+
 			pQue=[] # priority queue
 			lattice[name].selTopK(self.oParams,pQue)
-			nodes=[que[-1] for que in pQue] # que[-1]がlatticeのnode
+
+			# que[-1]がlatticeのnode
+			nodes=[que[-1] for que in pQue] 
+
 			# ルールをpats,stats,occsの3つのリストでdump
 			rules[name]=self.dump(name,nodes,self.oParams)
 
-		# ファイル出力(rulesはRも同じフォーマット)
+		# ファイル出力
 		self.writeCSV(rules,self.oParams)
 
 		return rules
 
-		#lattice.calRules()
-		#lattice.writeCSVrules(oParams,"xxoutPats","xxoutStats","xxoutIDs")
 
 if __name__ == '__main__':
+
+	"""
 	data = [
 	[1,10,[3,4]],
 	[1,15,[1,2,3]],
@@ -1037,4 +1084,5 @@ if __name__ == '__main__':
 	rules=spade.run()
 	print(rules)
 
+"""
 

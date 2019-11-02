@@ -28,7 +28,7 @@ helpMSG="""
   e parameter
     minSup=
     minSupProb=
-    maxSize= 必須
+    maxSize= デフォルト:3 
     maxLen=
     minGap=
     maxGap=
@@ -104,7 +104,9 @@ flat =[]
 for para in paraList:
 	flat.extend(para)	
 
-args=margs.Margs(sys.argv,",".join(flat),"i=,sid=,item=,time=,maxSize=,O=")
+#args=margs.Margs(sys.argv,",".join(flat),"i=,sid=,item=,time=,maxSize=,O=")
+args=margs.Margs(sys.argv,",".join(flat),"i=,sid=,item=,time=,O=")
+
 ##make パラメータ
 
 
@@ -147,6 +149,9 @@ for p in paraList[1] :
 		eParams[paraconvList[p]] = val
 	else:
 		eParams[re.sub(r'=$',"",p)] = val
+		
+	if not "maxSize=" in eParams or eParams["maxSize="] ==None:
+		eParams["maxSize="]=3
 
 oParams={}
 for p in paraList[2] :

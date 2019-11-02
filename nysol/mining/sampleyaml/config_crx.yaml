@@ -16,7 +16,7 @@ dataset:
     - n1
     name: data/crx2.csv
     yFld: class
-    yType: c
+    yType: d
   idFld: id
   seqFiles:
   - fields: id,time,item
