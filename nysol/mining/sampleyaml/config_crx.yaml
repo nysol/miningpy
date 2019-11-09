@@ -21,7 +21,7 @@ dataset:
   seqFiles:
   - fields: id,time,item
     fldname: seqfld1
-    iSize: 2
+    iSize: 8
     maxGap: null
     maxLen: 3
     maxSize: 4
@@ -32,7 +32,7 @@ dataset:
     name: data/crx2_seq1.csv
   - fields: id,time,item
     fldname: seqfld2
-    iSize: 3
+    iSize: 10
     maxGap: null
     maxLen: 3
     maxSize: 4

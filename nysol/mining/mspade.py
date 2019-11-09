@@ -887,12 +887,11 @@ class Spade:
 			datas=self.iParams["iData"]
 
 		# CSVデータ
-		elif "iFile" in self.iParams["iFile"]:
+		elif "iFile" in self.iParams:
 			if os.path.exists(self.iParams["iFile"]):
 				datas=readCSV(self.iParams)
 			else:
 				raise ValueError("file not found: %s"%self.iParams["iFile"])
-
 		else:
 			raise ValueError("either iData or iFile should be specified for input data.")
 
