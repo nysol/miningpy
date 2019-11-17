@@ -182,7 +182,6 @@ for p in paraList[2] :
 		else:
 			oParams[re.sub(r'=$',"",p)] = val
 
-
 spade=mm.Spade(iParams,eParams,oParams)
 
 

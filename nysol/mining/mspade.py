@@ -681,8 +681,8 @@ def readCSV(iParams):
 	if "cFile" in iParams:
 
 		cFile  = iParams["cFile"]
-		csidF  = iParams["cNames"][0]
-		classF = iParams["cNames"][1]
+		csidF  = iParams["csid"]
+		classF = iParams["cNames"]
 
 		f = None
 		f<<=nm.mcut(f="%s:sid,%s:eid,%s:item"%(sidF,eidF,itemF),i=iFile)
