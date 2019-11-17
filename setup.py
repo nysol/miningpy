@@ -107,7 +107,7 @@ NYSOL runs in UNIX environment (Linux and Mac OS X, not Windows).
 			#install_requires=[
       #	  "psutil"
 	    #],
-			scripts=['scripts/mspade.py','scripts/msketchsort.py' ],
+			scripts=['scripts/mspade.py','scripts/mcarm.py','scripts/msketchsort.py' ],
 			ext_modules =[skmod]
 			)
        

@@ -6,28 +6,19 @@ import numpy as np
 import copy
 import nysol.mining.mspade as mm
 from nysol.util.mmkdir import mkDir
-from rtree import rtree
+from nysol.mining.rtree import rtree
+from nysol.mining.dtree import dtree 
+from nysol.mining.dataset import dataset 
 
 import warnings
 warnings.filterwarnings('ignore')
 
 from skopt import gp_minimize
-from dtree import dtree
-from dataset import dataset
 
-def checkConfig(config):
-	print(config)
-	print(config["dataset"]["iFile"]["name"])
-	if not os.path.exists(config["dataset"]["iFile"]["name"]):
-		raise Exception("## ERROR: file not found: %s"%config["dataset"]["iFile"]["name"])
-
-	# iFldsとiSizeのサイズが異なればエラー
-
-	# indexSizeがアイテムの種類数を超えた時のチェックどうするか？
 
 class AlphabetIndex(object):
 
-	def __init__(self):
+	def __init__(self,config):
 		self.no=0
 		#self.items=[] # item vectorのvector
 		#self.iSize=[] # indexSize
@@ -440,6 +431,38 @@ class AlphabetIndex(object):
 			self.optimal_space = res.x
 
 
+
+class mcarm(object):
+	def __checkConfig(self,config):
+		if not os.path.exists(config["dataset"]["iFile"]["name"]):
+			raise Exception("## ERROR: file not found: %s"%config["dataset"]["iFile"]["name"])
+			# iFldsとiSizeのサイズが異なればエラー
+			# indexSizeがアイテムの種類数を超えた時のチェックどうするか？
+
+
+	def __init__(self,conf):
+		self.config = conf
+		self.__checkConfig(self.config)
+
+
+	def run(self):
+		odir = self.config["oPath"]
+		ds=dataset(self.config["dataset"])
+		ai=AlphabetIndex(self.config)
+		ai.setSpaces(ds)
+		ai.optimize()
+		mkDir(odir)
+
+		ai.predict(ai.optimal_space,ai.min_impurity_decrease)
+		##ai.optimal_model.vizModel("graph.pdf",None)
+		if len(ds.ovlist) != 0:
+			ai.optimal_model.vizModel(odir+"/dtree_opt.pdf",ai.optimal_features,ds.ovlist)
+			ai.model.vizModel(odir+"/dtree.pdf",ai.optimal_features,ds.ovlist)
+		else:
+			ai.optimal_model.vizModel(odir+"/dtree.pdf",ai.optimal_features)
+
+
+"""
 ##########
 # entry point
 argv=sys.argv
@@ -493,3 +516,4 @@ else:
 
 
 exit()
+"""
