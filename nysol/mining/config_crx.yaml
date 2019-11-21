@@ -1,0 +1,21 @@
+lasso_logistic:
+  cv: 10
+  Cs: 20
+dataset:
+  iFile:
+    name: data/crx2.csv
+    cFlds:
+    - d1
+    - d2
+    - d3
+    - i1
+    - i2
+    nFlds:
+    - n1
+    - n2
+    - n3
+    - n4
+    yFld: class
+    yType: d
+  idFld: id
+oPath: result_crx

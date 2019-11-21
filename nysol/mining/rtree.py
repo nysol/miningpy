@@ -21,7 +21,7 @@ from skopt import gp_minimize
 class rtree(object):
 	def __init__(self,config):
 		self.config=config
-		self.min_impurity_decrease=None
+		self.opt_hyper_parameter=None
 		pass
 
 	# https://own-search-and-study.xyz/2016/12/25/scikit-learn%E3%81%A7%E5%AD%A6%E7%BF%92%E3%81%97%E3%81%9F%E6%B1%BA%E5%AE%9A%E6%9C%A8%E6%A7%8B%E9%80%A0%E3%81%AE%E5%8F%96%E5%BE%97%E6%96%B9%E6%B3%95%E3%81%BE%E3%81%A8%E3%82%81/
@@ -29,9 +29,8 @@ class rtree(object):
 		self.x=x
 		self.y=y
 
-	def objectiveImpurity(self,spaces):
+	def objectiveFunction(self,spaces):
 		params=self.config
-		#params["min_impurity_decrease"]=spaces[0]
 		params["min_samples_leaf"]=spaces[0]
 		regr=tree.DecisionTreeRegressor(**params)
 
@@ -45,20 +44,19 @@ class rtree(object):
 
 
 	def build(self):
-		#parameters = {'min_impurity_decrease':list(np.arange(0.0,0.1,0.01))}
-
-		# ベイズ最適化による最適min_impurity_decreaseの探索(CVによる推定)
-		spaces = [(0,0.3, 'uniform')]
-		#res = gp_minimize(self.objectiveImpurity, spaces, acq_func="EI", n_calls=10, random_state=11)
-		res = gp_minimize(self.objectiveImpurity, spaces, n_calls=10, random_state=11)
-		#print(res.fun) # 目的関数値(accuracy*(-1))
-		print(res.x) # min_impurity_decrease 最適値
+		#params=self.config
+		# ベイズ最適化による最適min_samples_leafの探索(CVによる推定)
+		if False: #len(self.y)>=10 and self.doCV:
+			spaces = [(0,0.3, 'uniform')]
+			#res = gp_minimize(self.objectiveImpurity, spaces, acq_func="EI", n_calls=10, random_state=11)
+			res = gp_minimize(self.objectiveFunction, spaces, n_calls=15, random_state=11)
+			#print(res.fun) # 目的関数値(accuracy*(-1))
+			print(res.x) # opt_hyper_parameter 最適値
 
 		# モデル構築
 		params=self.config
-		#params["min_impurity_decrease"]=res.x[0]
-		params["min_samples_leaf"]=res.x[0]
-		self.min_impurity_decrease = res.x[0] # << 変数名変える
+		#params["min_samples_leaf"]=res.x[0]
+		#self.opt_hyper_parameter = res.x[0] # << 変数名変える
 
 
 		self.model=tree.DecisionTreeRegressor(**params)
@@ -66,11 +64,11 @@ class rtree(object):
 		#print(dir(self.model))
 		self.score=self.model.score(self.x, self.y)
 
-	def pbuild(self,min_impurity_decrease):
+	def pbuild(self,opt_hyper_parameter):
 		params=self.config
 
-		if min_impurity_decrease != None:
-			params["min_samples_leaf"]=min_impurity_decrease
+		if opt_hyper_parameter != None:
+			params["min_samples_leaf"]=opt_hyper_parameter
 
 		self.model=tree.DecisionTreeRegressor(**params)
 		self.model.fit(self.x, self.y)
