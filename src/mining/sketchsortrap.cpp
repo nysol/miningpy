@@ -61,7 +61,7 @@ PyObject* sketchsort_run(PyObject* self, PyObject* args){
 	for(i=0 ; i< psize;i++){
 		PyObject *param = PyList_GetItem(params ,i);
 		if(strCHECK(param)){
-			vv[i+1] = strGET(param);
+			vv[i+1] = const_cast<char*>(strGET(param));
 		}
 		else{
 			PyErr_SetString(PyExc_RuntimeError,"parameter ERROR : not str");
