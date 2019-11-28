@@ -2,378 +2,194 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+import re
+from pprint import pprint
 import nysol.mcmd as nm
 from nysol.util.mtemp import Mtemp
-
+import nysol.util.mheader as mheader
 import numpy as np
+import pandas as pd
 
-# category変数のdummy変数化
-# 使ってない
-#def mkDummy(svec):
-#	# svec: string vector (category variable)
-#	# ["a","c","a","b"]
-#	num2str=np.unique(svec) # ["a","b","c"]
-#	str2num={}
-#	for i,s in enumerate(num2str):
-#		str2num[s]=i
-#
-#	data=np.zeros((len(svec), len(num2str)))
-#	for i,s in enumerate(svec):
-#		data[i,str2num[s]]=1
-#	return data
+def show(df):
+	className=df.__class__.__name__
+	if className!="DataFrame":
+		raise BaseException("##ERROR: unknown data type: %s (line %d)"%(keyword,lineNo))
 
-class Category(object):
-	def __init__(self,name,data,dummy=True):
-		self.name=name
-		# data: string vector (category variable)
-		# ["a","c","a","b"]
-		self.num2str=sorted(np.unique(data)) # ["a","b","c"]
-		if dummy :
-			self.num2str=self.num2str[1:] # ["a","b","c"]
-		self.str2num={}
-		for i,s in enumerate(self.num2str):
-			self.str2num[s]=i
+	print("#####",className)
+	print("## data(top 5 lines):")
+	print(df[:5])
+	print("## len(df):",len(df))
+	print("## df.dtypes:")
+	print(df.dtypes)
+	print("## df.isnull().sum():")
+	print(df.isnull().sum())
 
-		self.data=np.zeros((len(data), len(self.num2str)))
-		for i,s in enumerate(data):
-			if s in self.str2num:
-				self.data[i,self.str2num[s]]=-1.0
+def load_config(configFile):
+	with open(configFile,"r") as fpr:
+		text=fpr.readlines()
+	#print(text)
 
-	def _summary(self):
-		print("self.name:",self.name)
-		print("self.num2str:",self.num2str)
-		print("self.str2num:",self.str2num)
-		print("self.data:",self.data.shape,self.data[0:10])
+	config=[]
+	data=None
+	lineNo=0
+	for line in text:
+		lineNo+=1
+		line=line.strip()
+		#print("####",line)
+		if line=="" or line[0]=="#":
+			continue
 
-# iSize : aSize : data : num2alpha : alpha2num
-class Item(object):
-
-	def __init__(self,name,iSize,data):
-		self.name=name
-		self.iSize=iSize
-		# data: string ndarray (item variable)
-		# ["a","c","a","b"]
-		self.num2alpha=np.unique(data) # ["a","b","c"]
-		self.alpha2num={}
-		for i,s in enumerate(self.num2alpha):
-			self.alpha2num[s]=i
-		self.data=data
-		self.aSize=len(self.num2alpha)
-
-	def _summary(self):
-		print("self.name:",self.name)
-		print("self.iSize:",self.iSize)
-		print("self.num2alpha:",self.num2alpha)
-		print("self.alpha2num:",self.alpha2num)
-		print("self.data:",self.data.shape,self.data[0:10])
-
-
-
-class Itemset(object):
-	def __init__(self,config,idList):
-		self.name=config["name"]
-		
-		if "fldname" in config:
-			self.fldname=config["fldname"]
+		if re.match(r'^.*{$',line):
+			keyword=line[:-1].strip()
+			if keyword in ["table","transaction","sequence"]:
+				data={}
+				data["type"]=keyword
+				data["names"]=[]
+				data["convs"]=[]
+			else:
+				raise BaseException("##ERROR: unknown data type: %s (line %d)"%(keyword,lineNo))
+		elif line=="}":
+			config.append(data)
 		else:
-			self.fldname=config["name"]
+			split=line.split(":")
+			split=[s.strip() for s in split]
 
+			if len(split)!=2:
+				raise BaseException("syntax error in %s (line %d)"%(line,lineNo))
+			else:
+				data["names"].append(split[0])
+				data["convs"].append(split[1])
 
-		self.iSize=int(config["iSize"])
-		self.alpha2num=set([])
-		self.num2alpha=[]
-		self.data=[]
+	if len(config)==1:
+		config=config[0]
+	#pprint(config)
+	return config
 
-		idList_i=0
-		f=None
-		f<<=nm.mcut(f="id,item",i=self.name)
-		f<<=nm.mdelnull(f="*")
-		f<<=nm.muniq(k="id,item")
-		for block in f.keyblock(k="id",s="item",dtype={"id":"str","item":"str"}):
-			items=[]
-			sid=block[0][0]
-			while sid>idList[idList_i]:
-				self.data.append([]) # データにidがないので追加
-				idList_i+=1
-			# この条件(idListにないsampleID)はありえないはずだがエラーとせずスキップさせる
-			if sid<idList[idList_i]:
-				continue
-			for line in block:
-				items.append(line[1])
-				self.alpha2num.add(line[1])
-			self.data.append(items)
-			#self.data.append((idList[idList_i],items))
-			idList_i+=1
+def conv_id(data,name):
+	return data.set_index(name)
+def conv_numeric(data,name,dtype=float):
+	return data.astype({name: dtype})
+def conv_category(data,name):
+	return data.astype({name: "category"})
+def conv_class(data,name):
+	return data.astype({name: "category"})
+def conv_dummy(data,name,drop_first=True,dummy_na=False,dtype=float):
+	return pd.get_dummies(data,columns=[name],
+			drop_first=drop_first, dummy_na=dummy_na, dtype=dtype)
 
-		# データの最後のidがidListの最後でない場合、空のitemsetを追加
-		while idList_i<len(idList):
-			self.data.append([])
-			idList_i+=1
+def mkTable(config,source):
+	if config.__class__.__name__=="str":
+		config=load_config(config)
 
+	if (not "type" in config) or (config["type"]!="table"):
+		raise BaseException("##ERROR: bad config, seems not for table class")
 
-		self.num2alpha=sorted(list(self.alpha2num))
-		self.alpha2num={}
-		for i,alpha in enumerate(self.num2alpha):
-			self.alpha2num[alpha]=i
+	names=config["names"]
+	if source.__class__.__name__=="str":
+		dat = pd.read_csv(source)
+		csv_names=dat.columns.to_list()
+		# check names
+		for name in  names:
+			if name not in csv_names:
+				raise BaseException("##ERROR: field name not found in csv data: %s"%name)
+		data=dat.loc[:,names]
 
+	elif source.__class__.__name__ in ["list","ndarray"]:
+		if len(source)==0:
+			raise BaseException("##ERROR: empty data found in list data source")
+		data=pd.DataFrame(source, columns=names)
 
-		self.aSize=len(self.num2alpha)
+	convs=config["convs"]
+	for i,conv in enumerate(convs):
+		# configのconv文字列の内容を型に応じたメソッド名を変更してそのまま実行する
+		if re.match(r"^id\(",conv):
+			data=eval(conv.replace("id(","conv_id(data,'%s'"%(names[i])))
+		elif re.match(r"^numeric\(",conv):
+			data=eval(conv.replace("numeric(","conv_numeric(data,'%s',"%(names[i])))
+		elif re.match(r"^category\(",conv):
+			data=eval(conv.replace("category(","conv_category(data,'%s',"%(names[i])))
+		elif re.match(r"^class\(",conv):
+			data=eval(conv.replace("class(","conv_class(data,'%s',"%(names[i])))
+		elif re.match(r"^dummy\(",conv):
+			data=eval(conv.replace("dummy(","conv_dummy(data,'%s',"%(names[i])))
+		else: # no conversion
+			pass
+	return data
 
-	def _summary(self):
-		print("self.name:",self.name)
-		print("self.aSize:",self.aSize)
-		print("self.iSize:",self.iSize)
-		print("self.num2alpha:",self.num2alpha)
-		print("self.alpha2num:",self.alpha2num)
-		print("self.data:",len(self.data),self.data[0:10])
+def tra2tbl(tra,idName,itemName,dtype="float16"):
+	num2str=tra[itemName].cat.categories.to_list()
+	str2num={v:i for i,v in enumerate(num2str)}
+	#print(num2str)
+	#print(str2num)
+	data=[]
+	ids=[]
+	for key,items in tra.groupby([idName]):
+		# print(key)
+		# 100
+		# print(items.__class__.__name__)
+		# DataFrame
+		# print(items)
+		# id item
+		# 0  100    b
+		# 1  100    f
+		# 2  100    h
+		# 3  100    i
+		line=[0]*(len(str2num)+1)
+		for index,row in items.iterrows():
+			line[str2num[row[itemName]]]=1
+		line[-1]=key
+		data.append(line)
 
-class Sequence(object):
+	config={}
+	config["type"]="table"
+	config["names"]=[itemName+"_"+s for s in num2str]+[idName]
+	config["convs"]=["numeric(dtype='%s')"%(dtype)]*len(str2num)+["id()"]
+	tbl=mkTable(config,data)
+	return tbl
 
-	def __init__(self,config,idList):
-		self.name=config["name"]
-		if "fldname" in config:
-			self.fldname=config["fldname"]
-		else:
-			self.fldname=config["name"]
+def cut(df,flds,reverse=False):
+	if reverse:
+		rev_flds=[]
+		for fld in df.columns.to_list():
+			if not fld in flds:
+				rev_flds.append(fld)
+		flds=rev_flds
+	return df.loc[:,flds]
 
-		self.eParams={}
-		self.oParams={}
-
-		self.temp = Mtemp()
-
-		self.eParams["maxSize"] = 2
-		self.oParams["topk"] = 10
-		self.oParams["oPats"]  = self.temp.file()
-		self.oParams["oStats"] = self.temp.file()
-		self.oParams["oOccs"]  = self.temp.file()
-
-
-		# epara
-		for para in ['minSup','minSupProb','maxSize','maxLen' ,'minGap','maxGap','maxWin']: 
-			if para in config:
-				self.eParams[para] = config[para]
-		# opara
-		
-		for para in ['maximal','topk','minSize','minLen' ,'maxSup','minPprob']: 
-			if para in config:
-				self.oParams[para] = config[para]
-
-
-		self.iSize=int(config["iSize"])
-		flds=config["fields"].split(",")
-		self.idFld=flds[0]
-		self.timeFN=flds[1]
-		self.itemFN=flds[2]
-		self.alpha2num=set([])
-		self.num2alpha=[]
-		self.data=[]
-
-		items=set()
-		f=None
-		f<<=nm.mcut(f="%s,%s,%s"%(self.idFld,self.timeFN,self.itemFN),i=self.name)
-		f<<=nm.muniq(k="%s,%s,%s"%(self.idFld,self.timeFN,self.itemFN))
-		for line in f:
-			items.add(line[2])
-
-		idList_i=0
-		f=None
-		f<<=nm.mcut(f="id,time,item",i=self.name)
-		f<<=nm.mdelnull(f="*")
-		f<<=nm.muniq(k="id,time,item")
-		for block in f.keyblock(k="id",s="time%n",dtype={"id":"str","time":"int","item":"str"}):
-			sid=block[0][0]
-			while sid>idList[idList_i]:
-				self.data.append([sid,[]]) # データにidがないので追加
-				#self.data.append((idList[idList_i],[])) # データにidがないので追加
-				idList_i+=1
-
-			# この条件(idListにないsampleID)はありえないはずだがエラーとせずスキップさせる
-			if sid<idList[idList_i]:
-				continue
-
-			seq=[]
-			items=[]
-			timeBreak=False
-			prevTime=block[0][1]
-			for line in block:
-				time=line[1]
-				if prevTime!=time:
-					seq.append([prevTime,items])
-					items=[]
-					prevTime=time
-				items.append(line[2])
-				self.alpha2num.add(line[2])
-
-			if len(items) != 0:
-				seq.append([prevTime,items])
-			
-
-			self.data.append([sid,seq])
-			#self.data.append((idList[idList_i],items))
-			idList_i+=1
-
-		# データの最後のidがidListの最後でない場合、空のseqを追加
-		while idList_i<len(idList):
-			self.data.append([idList[idList_i],[]])
-			idList_i+=1
-
-		self.num2alpha=sorted(list(self.alpha2num))
-		self.alpha2num={}
-		for i,alpha in enumerate(self.num2alpha):
-			self.alpha2num[alpha]=i
-
-		self.aSize=len(self.num2alpha)
-
-	def _summary(self):
-		print("self.name:",self.name)
-		print("self.aSize:",self.aSize)
-		print("self.iSize:",self.iSize)
-		print("self.num2alpha:",self.num2alpha)
-		print("self.alpha2num:",self.alpha2num)
-		print("self.data:",len(self.data),self.data[0:10])
-
-class dataset(object):
-	def readBaseFile(self):
-		cats=[]
-		items=[]
-
-		# 目的変数変換テーブル
-		if self.iFile_yType!="r": # regression
-			cnt=0
-			for lin in nm.mdelnull(f="*",i=self.iFile_name).mcut(f=self.iFile_yFld).muniq(k=self.iFile_yFld):
-				self.ovmap[lin[0]] = cnt
-				self.ovlist.append(lin[0])
-				cnt += 1
-
-		lcnt=0
-		for line in nm.mdelnull(f="*",i=self.iFile_name,u="xxel").msortf(f=self.idFld).getline(otype="dict"):
-			### null値対応
-			### itemFld対応 => indexing対象となるcategoryFld
-			# sample-id項目
-			lcnt+=1
-			self.id.append(line[self.idFld])
-
-			# 目的変数
-			if self.iFile_yType=="r": # regression
-				self.y.append(float(line[self.iFile_yFld]))
-			else:                # classification
-				self.y.append(self.ovmap[line[self.iFile_yFld]])
-
-			# 数値変数
-			if self.iFile_nFlds:
-				smp=[]
-				for v in self.iFile_nFlds:
-					smp.append(float(line[v]))
-				self.nums.append(smp)
-
-			# カテゴリ変数
-			if self.iFile_cFlds:
-				smp=[]
-				for v in self.iFile_cFlds:
-					smp.append(line[v])
-				cats.append(smp)
-
-			# アイテム変数(indexing対象のcategory変数)
-			if self.iFile_iFlds:
-				smp=[]
-				for v in self.iFile_iFlds:
-					smp.append(line[v])
-				items.append(smp)
-
-		### List => ndarray
-		print(lcnt)
-		self.y=np.array(self.y)
-		self.sampleSize=len(self.y)
-		self.nums=np.array(self.nums)
-
-		for i,cat in enumerate(np.array(cats).transpose()):
-			self.cats.append(Category(self.iFile_cFlds[i],cat))
-
-		for i,item in enumerate(np.array(items).transpose()):
-			self.items.append(Item(self.iFile_iFlds[i],self.iFile_iSize[i],item))
-
-	def __init__(self,config):
-
-		self.idFld=config["idFld"] # サンプルID項目名
-		self.iFile=config["iFile"] # 入力ファイル
-		self.iFile_name=self.iFile["name"] # 入力ファイル名
-		self.iFile_yFld=self.iFile["yFld"] # 目的変数名
-		self.iFile_yType=self.iFile["yType"] # 目的変数タイプ:regression/classification
-		
-		self.iFile_nFlds=[]
-		self.iFile_cFlds=[]
-		self.iFile_iFlds=[]
-		self.iFile_iSize=[]
-
-		if "nFlds" in self.iFile:
-			self.iFile_nFlds=self.iFile["nFlds"] # 数値項目名
-
-		if "cFlds" in self.iFile:
-			self.iFile_cFlds=self.iFile["cFlds"] # カテゴリ項目名
-
-		if "iFlds" in self.iFile:
-			self.iFile_iFlds=self.iFile["iFlds"] # item項目名
-
-		if "iSize" in self.iFile:
-			self.iFile_iSize=self.iFile["iSize"] # item項目indexサイズ
-
-		self.id=[]
-		self.y=[]
-		self.nums=[]
-		self.cats=[]
-		self.items=[]
-		self.ovmap={}
-		self.ovlist=[]
-
-
-		# self.id,self.yなどの基本変数はここでセットされる
-		self.readBaseFile()
-
-		self.itemsets=[]
-		if "traFiles" in config:
-			for param in config["traFiles"]:
-				self.itemsets.append(Itemset(param,self.id))
-
-		self.sequences=[]
-		if "seqFiles" in config:
-			for param in config["seqFiles"]:
-				self.sequences.append(Sequence(param,self.id))
-
-	def _summary(self):	
-		print("self.idFld:",self.idFld)
-		print("self.iFile_name:",self.iFile_name)
-		print("self.iFile_yFld:",self.iFile_yFld)
-		print("self.iFile_yType:",self.iFile_yType)
-		print("self.iFile_nFlds:",self.iFile_nFlds)
-		print("self.iFile_cFlds:",self.iFile_cFlds)
-		print("self.iFile_iFlds:",self.iFile_iFlds)
-		print("self.iFile_iSize:",self.iFile_iSize)
-
-		print("### ID")
-		print("self.id",len(self.id),self.id[0:10])
-		print("### OBJECTIVE VARIABLE")
-		print("self.y",self.y.shape,self.y[0:10])
-		print("### NUMERIC VARIABLE")
-		print("self.nums",self.nums.shape,self.nums[0:10])
-		print("### CATEGORY VARIABLE")
-		for cat in self.cats:
-			cat._summary()
-		print("### ITEM VARIABLE")
-		for item in self.items:
-			item._summary()
-		print("### ITEMSET VARIABLE")
-		for itemset in self.itemsets:
-			itemset._summary()
-		print("### SEQUENCE VARIABLE")
-		for sequence in self.sequences:
-			sequence._summary()
+def join(tableList):
+	concat=[]
+	for tbl in tableList[1:]:
+		concat.append(tbl)
+	joinedTBL=tableList[0].join(concat)
+	return joinedTBL
 
 if __name__ == '__main__':
-	import importlib
-	configFile=os.path.expanduser(sys.argv[1])
-	sys.path.append(os.path.dirname(configFile))
-	config=importlib.import_module(os.path.basename(configFile).replace(".py",""))
+	configFile="config/crx_tra.dsc"
+	tra=mkTable(configFile,"data/crx_tra1.csv")
 
-	ds=dataset(config.dataset)
-	ds._summary()
+	show(tra)
+	tratbl=tra2tbl(tra,"id","item")
+	show(tratbl)
+
+	configFile="config/crx2.dsc"
+	tbl=mkTable(configFile,"data/crx2.csv")
+	show(tbl)
+	cls=cut(tbl,["class"])
+	show(cls)
+	oth=cut(tbl,["class"],reverse=True)
+	show(oth)
+
+	data=[
+			[1,"a",1.2],
+			[2,"b",1.3]
+			]
+	config={}
+	config["type"]="table"
+	config["names"]=["key","商品","金額"]
+	config["convs"]=["id()","category()","numeric()"]
+	smalltbl=mkTable(config,data)
+	show(smalltbl)
+
+	jtbl=join([tbl,tratbl])
+	show(jtbl)
 

@@ -14,19 +14,33 @@ from sklearn import tree
 #from sklearn.model_selection import KFold
 #from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import KFold
 import pydotplus
 from sklearn.externals.six import StringIO
-from skopt import gp_minimize
-from model import RegressionPredicted
 
-class rtree(object):
+from skopt import gp_minimize
+from model import ClassificationPredicted
+
+class ctree(object):
 	def __init__(self,x_df,y_df,config):
 		if len(y_df.columns)!=1:
 			raise BaseException("##ERROR: DataFrame of y variable must be one column data")
+
 		self.config=config
 
 		self.yName=y_df.columns[0]
+		classDist=y_df[self.yName].value_counts().to_dict()
+		# print(classDist)
+		# {'-': 373, '+': 305}
+		self.labels=sorted([c for c in classDist.keys()])
+		# ['+', '-']
+
+		# オリジナルクラス値を0/1に変換 => cross validationでのみ利用(文字型のクラスを受け付けないので)
+		str2num={c:i for i,c in enumerate(self.labels)}
+		# print(str2num)
+		# {'+': 0, '-': 1}
+		self.y01=np.array([str2num[v] for v in y_df[self.yName].values])
 		self.y=y_df.values.reshape((-1,))
 
 		self.xNames=x_df.columns.to_list()
@@ -34,26 +48,27 @@ class rtree(object):
 
 		self.tree_chart=None
 
-		self.opt_hyper_parameter=None
+		# クラスサイズ最小値が10以下ならcross validationできないことを判定させるため=>build()の最初で利用
+		self.y_minClassSize=min(classDist.values())
 
 	def objectiveFunction(self,spaces):
 		params=self.config
 		params["min_samples_leaf"]=spaces[0]
-		regr=tree.DecisionTreeRegressor(**params)
+		clf=tree.DecisionTreeClassifier(**params)
 
-		#print(clf.get_params())
-		skFold=KFold(n_splits=10,random_state=11)
+		#skFold=KFold(n_splits=10,random_state=11)
+		skFold=StratifiedKFold(n_splits=10,random_state=11)
 
-		return np.mean(cross_val_score(regr, self.x, self.y, cv=skFold, scoring='neg_mean_squared_error'))
-		#return np.mean(cross_val_score(regr, self.x, self.y, cv=skFold, scoring='neg_mean_absolute_error'))
-		#scores = cross_validation.cross_val_score(regr, X_digits, Y_digits, scoring='mean_squared_error', cv=loo,)
+		#print(cross_val_score(clf, self.x, self.y, cv=skFold, scoring='neg_mean_squared_error'))
+		return np.mean(cross_val_score(clf, self.x, self.y01, cv=skFold, scoring='neg_mean_squared_error'))
 
 	def build(self):
 		params=self.config
-		# ベイズ最適化による最適min_samples_leafの探索(CVによる推定)
+		#print("params",params)
+
 		self.cv_minFun=None
 		self.cv_minX=None
-		if len(self.y)>=10 and not "min_samples_leaf" in params:
+		if self.y_minClassSize>=10 and not "min_samples_leaf" in params:
 			#parameters = {'min_impurity_decrease':list(np.arange(0.0,0.1,0.01))}
 			# ベイズ最適化による最適min_impurity_decreaseの探索(CVによる推定)
 			spaces = [(0.001,0.3, 'uniform')]
@@ -67,16 +82,23 @@ class rtree(object):
 			# 最適枝刈り度のセット
 			params["min_samples_leaf"]=self.cv_minX
 
-		self.model=tree.DecisionTreeRegressor(**params)
+		self.model=tree.DecisionTreeClassifier(**params)
 		self.model.fit(self.x, self.y)
+		#print(dir(self.model))
+
 		self.score=self.model.score(self.x, self.y)
+		#print("m accuracy",self.score)
 
 	def predict(self,x_df):
-		pred=RegressionPredicted()
+		pred=ClassificationPredicted()
 		x=x_df.values.reshape((-1,len(x_df.columns)))
 
+		# 以下の各処理では、例外なく0.0/1.0のクラス値は元のクラス名に戻してやる
 		pred.y_pred=self.model.predict(x)
+		pred.y_prob=self.model.predict_proba(x)
+		pred.probClassOrder=self.model.classes_ # y_probの出力順
 		pred.id=x_df.index.to_list()
+		pred.labels=self.labels
 		return pred
 
 	def load(iFile):
@@ -97,8 +119,8 @@ class rtree(object):
 			#self.tree_chart.write_png("%s/tree.png"%(oPath))
 			self.tree_chart.write_pdf("%s/tree.pdf"%(oPath))
 
-	def visualize(self):
-		classes=None
+	def visualize(self):#,oFile,features=None,classes=None):
+		classes=[str(v) for v in self.model.classes_] # y_probの出力順
 
 		# image
 		dot_data = StringIO()
@@ -145,31 +167,74 @@ class rtree(object):
 if __name__ == '__main__':
 	import dataset as ds
 
-	config={}
-	config["type"]="table"
-	["Sex","Length","Diameter","Height","Whole","Shucked","Viscera","Shell","Rings","id"]
+	configFile="./config/crx2.dsc"
+	crx=ds.mkTable(configFile,"./data/crx2.csv")
+	#ds.show(crx)
 
-	config["names"]=["Sex","Length","Diameter","Height","Whole","Shucked","Viscera","Shell","Rings","id"]
-	config["convs"]=["dummy()","numeric()","numeric()","numeric()","numeric()","numeric()","numeric()","numeric()","numeric()","numeric()"]
-	aba=ds.mkTable(config,"./data/abalone.csv")
-	aba_y=ds.cut(aba,["Rings"])
-	aba_x=ds.cut(aba,["Rings"],reverse=True)
-	ds.show(aba_x)
-	ds.show(aba_y)
+	crx=crx.dropna()
+	crx_y=ds.cut(crx,["class"])
+	crx_x=ds.cut(crx,["class"],reverse=True)
 
 	config={"max_depth": 10}
-	#config["min_samples_leaf"]=100 # 指定すればCVなし
-	model=rtree(aba_x,aba_y,config)
+	model=ctree(crx_x,crx_y,config)
 	model.build()
+	print("cv_minFunc",model.cv_minFun)
+	print("cv_minX",model.cv_minX)
+	print("score",model.score)
 	model.visualize()
-	model.save("xxrtree_model_aba")
+	model.save("xxctree_model_crx")
 
-	pred=model.predict(aba_x) # ClassificationPredicted class
-	pred.evaluate(aba_y)
-	pred.save("xxrtree_pred_aba")
+	pred=model.predict(crx_x)
+	pred.evaluate(crx_y)
+	pred.save("xxctree_pred_crx")
+	#print(pred.y_pred)
+	#print(pred.y_prob)
 
 	model=None
-	model=rtree.load("xxrtree_model_aba/model.sav")
-	pred=model.predict(aba_x)
-	pred.save("xxrtree_pred2_aba")
-	
+	model=ctree.load("xxctree_model_crx/model.sav")
+	pred=model.predict(crx_x)
+	pred.save("xxctree_pred_crx2")
+
+
+	from sklearn.datasets import load_iris
+	iris = load_iris()
+	print(iris.data)
+	print(iris.target)
+
+	config={}
+	config["type"]="table"
+	config["names"]=["sepal length","sepal width","petal length","petal width"]
+	config["convs"]=["numeric()","numeric()","numeric()","numeric()"]
+	iris_x=ds.mkTable(config,iris.data)
+	ds.show(iris_x)
+
+	config={}
+	config["type"]="table"
+	config["names"]=["species"]
+	config["convs"]=["category()"]
+	iris_y=ds.mkTable(config,iris.target)
+	ds.show(iris_y)
+
+	config={"max_depth": 10}
+	#config["min_samples_leaf"]=30 # 指定すればCVなし
+	model=ctree(iris_x,iris_y,config)
+
+	#print(tbl.__class__.__name__)
+	model.build()
+	model.visualize()
+	model.save("xxctree_model_iris")
+
+	pred=model.predict(iris_x) # ClassificationPredicted class
+	#print(pred.y_prob[0],pred.y_pred[0])
+	pred.evaluate(iris_y)
+	pred.save("xxctree_pred_iris")
+	#print(pred.y_pred)
+	#print(pred.y_prob)
+
+	model=None
+	model=ctree.load("xxctree_model_iris/model.sav")
+	pred=model.predict(iris_x)
+	pred.save("xxctree_pred_iris2")
+	print(model.labels)
+
+
