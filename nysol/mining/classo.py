@@ -70,20 +70,20 @@ class classo(object):
 		# 回帰係数
 		self.coef=[]
 		self.coef.append(["class","x","coef"])
-		if len(model.labels)==2:
+		if len(self.labels)==2:
 			cnos=[0]
 		else:
-			cnos=range(len(model.labels))
+			cnos=range(len(self.labels))
 		for c in cnos:
-			self.coef.append([str(model.labels[c]),"intercept",float(model.model.intercept_[c])])
-			for i in range(len(model.xNames)):
-				self.coef.append([str(model.labels[c]),model.xNames[i],float(model.model.coef_[c][i])])
+			self.coef.append([str(self.labels[c]),"intercept",float(self.model.intercept_[c])])
+			for i in range(len(self.xNames)):
+				self.coef.append([str(self.labels[c]),self.xNames[i],float(self.model.coef_[c][i])])
 
 		# 最適λ
 		self.opt_lambda=[]
 		self.opt_lambda.append(["class","lambda"])
 		for c in cnos:
-			self.opt_lambda.append([str(model.labels[c]),float(model.model.C_[c])])
+			self.opt_lambda.append([str(self.labels[c]),float(self.model.C_[c])])
 
 	def predict(self,x_df):
 		pred=ClassificationPredicted()

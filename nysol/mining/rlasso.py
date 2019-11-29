@@ -58,14 +58,14 @@ class rlasso(object):
 		# 回帰係数
 		self.coef=[]
 		self.coef.append(["x","coef"])
-		self.coef.append(["intercept",float(model.model.intercept_)])
+		self.coef.append(["intercept",float(self.model.intercept_)])
 		for i in range(len(self.model.coef_)):
-			self.coef.append([model.xNames[i],float(model.model.coef_[i])])
+			self.coef.append([model.xNames[i],float(self.model.coef_[i])])
 
 		# 最適λ
 		self.opt_lambda=[]
 		self.opt_lambda.append(["lambda"])
-		self.opt_lambda.append([float(model.model.alpha_)])
+		self.opt_lambda.append([float(self.model.alpha_)])
 
 	def predict(self,x_df):
 		pred=RegressionPredicted()
