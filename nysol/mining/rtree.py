@@ -18,7 +18,7 @@ from sklearn.model_selection import KFold
 import pydotplus
 from sklearn.externals.six import StringIO
 from skopt import gp_minimize
-from model import RegressionPredicted
+from nysol.mining.model import RegressionPredicted
 
 class rtree(object):
 	def __init__(self,x_df,y_df,config):

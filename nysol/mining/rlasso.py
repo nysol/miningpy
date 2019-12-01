@@ -15,7 +15,7 @@ from sklearn import tree
 #from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import StratifiedKFold
-from model import RegressionPredicted
+from nysol.mining.model import RegressionPredicted
 
 
 class rlasso(object):

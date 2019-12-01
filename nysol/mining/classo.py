@@ -29,7 +29,7 @@ import warnings
 warnings.filterwarnings('ignore')
 from skopt import gp_minimize
 #from model import ClassificationModel
-from model import ClassificationPredicted
+from nysol.mining.model import ClassificationPredicted
 
 import model
 

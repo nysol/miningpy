@@ -20,7 +20,7 @@ import pydotplus
 from sklearn.externals.six import StringIO
 
 from skopt import gp_minimize
-from model import ClassificationPredicted
+from nysol.mining.model import ClassificationPredicted
 
 class ctree(object):
 	def __init__(self,x_df,y_df,config):
