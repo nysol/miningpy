@@ -73,6 +73,8 @@ def conv_category(data,name):
 	return data.astype({name: "category"})
 def conv_class(data,name):
 	return data.astype({name: "category"})
+def conv_as(data,name,dtype):
+	return data.astype({name: dtype})
 def conv_dummy(data,name,drop_first=True,dummy_na=False,dtype=float):
 	return pd.get_dummies(data,columns=[name],
 			drop_first=drop_first, dummy_na=dummy_na, dtype=dtype)
@@ -86,8 +88,10 @@ def mkTable(config,source):
 
 	names=config["names"]
 	if source.__class__.__name__=="str":
-		dat = pd.read_csv(source)
+		dat = pd.read_csv(source,dtype=str)
 		csv_names=dat.columns.to_list()
+		csv_names=[re.sub("%.*$","",v) for v in csv_names] ## mcmd csv出力対策: %nなどの除去
+		dat.columns=csv_names
 		# check names
 		for name in  names:
 			if name not in csv_names:
@@ -112,7 +116,9 @@ def mkTable(config,source):
 			data=eval(conv.replace("class(","conv_class(data,'%s',"%(names[i])))
 		elif re.match(r"^dummy\(",conv):
 			data=eval(conv.replace("dummy(","conv_dummy(data,'%s',"%(names[i])))
-		else: # no conversion
+		elif re.match(r"^as\(",conv):
+			data=eval(conv.replace("as(","conv_as(data,'%s',"%(names[i])))
+		else: # no conversion (as("object")含む)
 			pass
 	return data
 
@@ -164,6 +170,18 @@ def join(tableList):
 	return joinedTBL
 
 if __name__ == '__main__':
+	with open("xxa.csv","w") as f:
+		f.write("""a%n0,b
+10,abc
+20,def
+""")
+	config={}
+	config["type"]="table"
+	config["names"]=["a","b"]
+	config["convs"]=["as('int64')","as('object')"]
+	dat=mkTable(config,"xxa.csv")
+	show(dat)
+
 	configFile="config/crx_tra.dsc"
 	tra=mkTable(configFile,"data/crx_tra1.csv")
 
