@@ -79,7 +79,7 @@ skmod = Extension('nysol/mining/_sketchsortlib',
 
 
 setup(name = 'nysol_mining',
-			packages=['nysol','nysol/mining'],
+			packages=['nysol','nysol/mining','nysol/widget','nysol/model'],
 			version = '0.0.1',
 			description = 'This is nysol tools',
 			long_description="""\
