@@ -11,8 +11,8 @@ import json
 import re
 
 from sklearn import tree
-#from sklearn.model_selection import KFold
-#from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import KFold
+from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import KFold
@@ -60,7 +60,9 @@ class ctree(object):
 		skFold=StratifiedKFold(n_splits=10,random_state=11)
 
 		#print(cross_val_score(clf, self.x, self.y, cv=skFold, scoring='neg_mean_squared_error'))
-		return np.mean(cross_val_score(clf, self.x, self.y01, cv=skFold, scoring='neg_mean_squared_error'))
+		score=np.mean(cross_val_score(clf, self.x, self.y01, cv=skFold, scoring='neg_mean_squared_error'))*(-1)
+		print("space",spaces[0],score)
+		return score
 
 	def build(self):
 		params=self.config
@@ -68,20 +70,33 @@ class ctree(object):
 
 		self.cv_minFun=None
 		self.cv_minX=None
-		if self.y_minClassSize>=10 and not "min_samples_leaf" in params:
-			#parameters = {'min_impurity_decrease':list(np.arange(0.0,0.1,0.01))}
-			# ベイズ最適化による最適min_impurity_decreaseの探索(CVによる推定)
-			spaces = [(0.001,0.3, 'uniform')]
-			res = gp_minimize(self.objectiveFunction, spaces, n_calls=15, random_state=11)
-			self.cv_minFun=res.fun # 最小の目的関数値
-			self.cv_minX=res.x[0] # 最適パラメータ(枝刈り度)
-			#print(res) # 目的関数値
-			#print(minFun,minX) # 目的関数値
-			#print(res.x) # min_impurity_decrease 最適値
-			#exit()	
-			# 最適枝刈り度のセット
-			params["min_samples_leaf"]=self.cv_minX
+		#print(self.y_minClassSize)
+		#print(params["min_samples_leaf"])
+		#if self.y_minClassSize>=10 and not "min_samples_leaf" in params and params["min_samples_leaf"]==0.0:
+		if self.y_minClassSize>=10 and params["min_samples_leaf"]==0.0:
+			if False:
+				grid_param ={'min_samples_leaf':[i/100 for i in range(1,50,5)]}
 
+				clf=tree.DecisionTreeClassifier(**params)
+				grid_search = GridSearchCV(clf, param_grid=grid_param, cv=10, scoring='neg_mean_squared_error',verbose = 2)
+				grid_search.fit(self.x,self.y01)
+				params["min_samples_leaf"]=grid_search.best_params_['min_samples_leaf']
+				print("opt","%f,%f"%(grid_search.best_params_['min_samples_leaf'],grid_search.best_score_))
+			else:
+				# ベイズ最適化による最適min_samples_leafの探索(CVによる推定)
+				spaces = [(0.0001,0.5, 'uniform')] # min_samples_leafの最大は0.5
+				res = gp_minimize(self.objectiveFunction, spaces, n_calls=15, random_state=11)
+				self.cv_minFun=res.fun # 最小の目的関数値
+				self.cv_minX=res.x[0] # 最適パラメータ(枝刈り度)
+				#print(res) # 目的関数値
+				#print(minFun,minX) # 目的関数値
+				#print(res.x) # min_impurity_decrease 最適値
+				#exit()	
+				# 最適枝刈り度のセット
+				params["min_samples_leaf"]=self.cv_minX
+				print("opt","%f,%f"%(self.cv_minX,self.cv_minFun))
+		elif self.y_minClassSize<10:
+			del params["min_samples_leaf"]
 		self.model=tree.DecisionTreeClassifier(**params)
 		self.model.fit(self.x, self.y)
 		#print(dir(self.model))
@@ -116,8 +131,8 @@ class ctree(object):
 			f.write(self.tree_text.encode("utf-8"))
 
 		if self.tree_chart:
-			#self.tree_chart.write_png("%s/tree.png"%(oPath))
-			self.tree_chart.write_pdf("%s/tree.pdf"%(oPath))
+			self.tree_chart.write_png("%s/tree.png"%(oPath))
+			#self.tree_chart.write_pdf("%s/tree.pdf"%(oPath))
 
 	def visualize(self):#,oFile,features=None,classes=None):
 		classes=[str(v) for v in self.model.classes_] # y_probの出力順
@@ -216,7 +231,6 @@ if __name__ == '__main__':
 	ds.show(iris_y)
 
 	config={"max_depth": 10}
-	#config["min_samples_leaf"]=30 # 指定すればCVなし
 	model=ctree(iris_x,iris_y,config)
 
 	#print(tbl.__class__.__name__)
