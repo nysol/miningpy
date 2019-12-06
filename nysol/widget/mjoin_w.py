@@ -17,47 +17,45 @@ import nysol.widget.lib as wlib
 import nysol.mcmd as nm
 
 ####################################################################
-class mselnum_w(object):
-	def __init__(self,iPath,oFile):
+class mjoin_w(object):
+	def __init__(self,iPath,mPath,oFile):
 		self.version="0.10"
 		self.date=datetime.now()
 
 		clear_output() # jupyter上の出力領域のクリア
 		self.iPath=os.path.abspath(os.path.expanduser(iPath))
+		self.mPath=os.path.abspath(os.path.expanduser(mPath))
 		self.oFile=os.path.abspath(os.path.expanduser(oFile))
 		self.oPath=os.path.dirname(self.oFile)
 		os.makedirs(self.oPath, exist_ok=True)
 
 	def exe_h(self,b):
-		key=self.key_w.getValue()
+		iKey=self.iKey_w.getValue()
+		mKey=self.mKey_w.getValue()
 		field=self.field_w.getValue()
-		vFr=self.vFr_w.value
-		vFrEq=self.vFrEq_w.value
-		vTo=self.vTo_w.value
-		vToEq=self.vToEq_w.value
-		reverse=self.reverse_w.value
-
-		rFr="("
-		rTo=")"
-		if vFrEq:
-			rFr="["
-		if vToEq:
-			rTo="]"
-		range_="%s%s,%s%s"%(rFr,vFr,vTo,rTo)
+		iOuter=self.iOuter_w.value
+		mOuter=self.mOuter_w.value
+		
+		if field=="":
+			self.msg_w.value = "##ERROR: 「結合する項目」が選ばれていません。"
+			return
 
 		params=[]
-		if key!="":
-			params.append("k=\""+key+"\"")
-		params.append("f=\""+field+"\"")
-		params.append("c=\""+range_+"\"")
-		if reverse:
-			params.append("r=True")
-		params.append("i=\""+self.iFile+"\"")
-		params.append("o=\""+self.oFile+"\"")
+		params.append("k='%s'"%(iKey))
+		if mKey!="":
+			params.append(",K='%s'"%(mKey))
+		params.append("m='%s'"%(self.mFile))
+		params.append("f='%s'"%(field))
+		if iOuter:
+			params.append(",n=True")
+		if mOuter:
+			params.append(",N=True")
+		params.append("i='%s'"%(self.iFile))
+		params.append("o='%s'"%(self.oFile))
 
 		header="""
 #################################
-# mselnum_w.pyの自動生成スクリプト
+# mjoin_w.pyの自動生成スクリプト
 # version: %s
 # 実行日時: %s
 #################################
@@ -66,10 +64,10 @@ class mselnum_w(object):
 		lib="""
 import nysol.mcmd as nm
 nm.setMsgFlg(True)
-"""
+"""%(os.path.dirname(self.oFile))
 		script="""
 f=None
-f<<=nm.mselnum(%s)
+f<<=nm.mjoin(%s)
 f.run(msg='on')
 """%(",".join(params))
 
@@ -85,7 +83,7 @@ oFile="%s"
 		self.output_w.value = output
 
 		# 出力path画面に移動
-		self.tab.selected_index = 2
+		self.tab.selected_index = 3
 
 	def iFile_h(self,files):
 		if len(files)==0:
@@ -97,23 +95,26 @@ oFile="%s"
 
 		# フィールドリスト
 		fldNames=wlib.getCSVheader(self.fName_w.value)
-		self.key_w.addOptions(copy.copy(fldNames))
-		self.field_w.addOptions(copy.copy(fldNames))
+		self.iKey_w.addOptions(copy.copy(fldNames))
 
 		# parameters画面に移動
 		self.tab.selected_index = 1
 
-	def stats_h(self,b):
-		field=self.field_w.getValue()
-		self.msg_w.value="\"%s\" 項目の統計量を計算中..."%(field)
-		f=None
-		f<<=nm.mcut(f=field,i=self.iFile)
-		f<<=nm.msummary(f=field,c="min,median,mean,max")
-		f<<=nm.writelist(header=True)
-		rsl=f.run()
-		#print(rsl)
-		self.result_w.value=str(rsl)
-		self.msg_w.value="\"%s\" 項目の統計量を計算中...完了"%(field)
+	def mFile_h(self,files):
+		if len(files)==0:
+			return
+		# parameter設定tabに反映
+		self.mFile=files[0] # ファイル名表示
+		self.mName_w.value=self.mFile
+		self.mText_w.value=self.mFile_w.propText() # ファイル内容
+
+		# フィールドリスト
+		fldNames=wlib.getCSVheader(self.mName_w.value)
+		self.mKey_w.addOptions(copy.copy(fldNames))
+		self.field_w.addOptions(copy.copy(fldNames))
+
+		# parameters画面に移動
+		self.tab.selected_index = 2
 
 	def widget(self):
 		### iFileBox
@@ -123,16 +124,25 @@ oFile="%s"
 			"propertyRows":20,
 			"actionHandler":self.iFile_h,
 			"actionTitle":"選択"
-	   }
+	  }
 		self.iFile_w=fileBrowser_w(self.iPath,if_config)
+
+		### mFileBox
+		mf_config={
+			"multiSelect":False,
+			"property":True,
+			"propertyRows":20,
+			"actionHandler":self.mFile_h,
+			"actionTitle":"選択"
+	  }
+		self.mFile_w=fileBrowser_w(self.mPath,mf_config)
 
 		### oFileBox
 		of_config={
 			"multiSelect":False,
 			"property":True,
 			"propertyRows":100,
-			"actionHandler":None,
-			"actionTitle":"選択"
+			"actionHandler":None
 	   }
 		self.oPath_w=fileBrowser_w(self.oPath,of_config)
 
@@ -146,54 +156,57 @@ oFile="%s"
 		pbox=[]
 
 		# ファイル名とファイル内容
-		self.fName_w =widgets.Text(description="file name",value="",layout=Layout(width='100%'),disabled=True)
+		self.fName_w =widgets.Text(description="入力ファイル",value="",layout=Layout(width='100%'),disabled=True)
 		self.fText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
 		pbox.append(self.fName_w)
 		pbox.append(self.fText_w)
+		self.mName_w =widgets.Text(description="参照ファイル",value="",layout=Layout(width='100%'),disabled=True)
+		self.mText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
+		pbox.append(self.mName_w)
+		pbox.append(self.mText_w)
 
-		# key 項目
-		config_k={
+		# key 項目(入力)
+		config={
 			"options":[],
-			"title":"key単位選択の項目",
+			"title":"入力key項目",
+			"rows":5,
+			"width":300,
+			"blank":False,
+			"multiSelect":False,
+			"message":None
+		}
+		self.iKey_w=selfield_w(config)
+
+		# key 項目(参照)
+		config={
+			"options":[],
+			"title":"参照key項目(無選択=入力keyに同じ)",
 			"rows":5,
 			"width":300,
 			"blank":True,
 			"multiSelect":False,
 			"message":None
 		}
-		self.key_w=selfield_w(config_k)
+		self.mKey_w=selfield_w(config)
+
 
 		# field 項目
-		config_f={
+		config={
 			"options":[],
-			"title":"item",
+			"title":"結合する項目",
 			"rows":5,
 			"width":300,
-			"multiSelect":False,
+			"multiSelect":True,
 			"message":None
 		}
-		self.field_w=selfield_w(config_f)
-		pbox.append(widgets.HBox([self.field_w.widget(),self.key_w.widget()]))
-
-		# 範囲
-		self.vFr_w=widgets.Text(description="from:",value="",layout=Layout(width='300px'))
-		self.vFrEq_w=widgets.Checkbox(value=True, description='以上', disabled=False)
-		frBox=widgets.HBox([self.vFr_w,self.vFrEq_w])
-		self.vTo_w=widgets.Text(description="to:",value="",layout=Layout(width='300px'))
-		self.vToEq_w=widgets.Checkbox(value=True, description='以下', disabled=False)
-		toBox=widgets.HBox([self.vTo_w,self.vToEq_w])
-		pbox.append(frBox)
-		pbox.append(toBox)
+		self.field_w=selfield_w(config)
+		pbox.append(widgets.HBox([self.iKey_w.widget(),self.mKey_w.widget(),self.field_w.widget()]))
 
 		# その他parameters
-		self.reverse_w=widgets.Checkbox(value=False, description='条件反転', disabled=False)
-		pbox.append(self.reverse_w)
-
-		search_w=widgets.Button(description="項目統計")
-		search_w.on_click(self.stats_h)
-		self.result_w=widgets.Textarea(rows=10,disabled=True,layout=widgets.Layout(width='99%'))
-		subbox1=widgets.VBox([search_w,self.result_w])
-		pbox.append(subbox1)
+		self.iOuter_w=widgets.Checkbox(value=False, description='入力outer join', disabled=False)
+		self.mOuter_w=widgets.Checkbox(value=False, description='参照outer join', disabled=False)
+		subbox2=widgets.HBox([self.iOuter_w,self.mOuter_w])
+		pbox.append(subbox2)
 
 		paramBox=widgets.VBox(pbox)
 
@@ -206,17 +219,17 @@ oFile="%s"
 		### tabコンテナ
 		children=[]
 		children.append(self.iFile_w.widget())
+		children.append(self.mFile_w.widget())
 		children.append(paramBox)
 		children.append(self.script_w)
 		children.append(self.output_w)
-		children.append(self.oPath_w.widget())
 		self.tab = widgets.Tab()
 		self.tab.children = children
 		self.tab.set_title(0, "入力ファイル選択")
-		self.tab.set_title(1, "行選択")
-		self.tab.set_title(2, "基本スクリプト")
-		self.tab.set_title(3, "出力系スクリプト")
-		self.tab.set_title(4, "出力パスブラウザ")
+		self.tab.set_title(1, "参照ファイル選択")
+		self.tab.set_title(2, "結合")
+		self.tab.set_title(3, "基本スクリプト")
+		self.tab.set_title(4, "出力系スクリプト")
 
 		# メッセージ窓
 		self.msg_w = widgets.Text(value="",layout=widgets.Layout(width='100%'),disabled=True)

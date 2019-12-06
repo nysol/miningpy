@@ -40,7 +40,7 @@ class selfield_w(object):
 		return self.fList_w.value
 
 	def change_h(self,event):
-		if not self.message is None:
+		if self.message is not None:
 			self.message("change_h",self)
 
 	def widget(self):

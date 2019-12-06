@@ -9,7 +9,7 @@ import sklearn.metrics as metrics
 import scipy.stats as stats
 import seaborn as sb
 
-class RegressionPredicted(object):
+class rPredict(object):
 	def __init__(self):
 		self.x=None
 		self.y_true=None

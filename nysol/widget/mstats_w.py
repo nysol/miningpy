@@ -17,7 +17,7 @@ import nysol.widget.lib as wlib
 import nysol.mcmd as nm
 
 ####################################################################
-class mselnum_w(object):
+class mstats_w(object):
 	def __init__(self,iPath,oFile):
 		self.version="0.10"
 		self.date=datetime.now()
@@ -28,36 +28,37 @@ class mselnum_w(object):
 		self.oPath=os.path.dirname(self.oFile)
 		os.makedirs(self.oPath, exist_ok=True)
 
+	def help(self):
+		return """sum:合計, mean:纂述平均, count:件数, ucount:件数-1, devsq:偏差平方和, "var":分散, "uvar":不偏分散
+sd:標準偏差, usd:不偏標準偏差, USD:, cv:変動係数, min:最小値, qtile1:第一四分位点, median:中央値
+qtile3:第三四分位点, max:最大値, range:max-min, qrange:qtile3-qtile1, mode:最頻値, skew:歪度,
+uskew:不偏歪度, kurt:尖度, ukurt:不偏尖度
+"""
+
 	def exe_h(self,b):
 		key=self.key_w.getValue()
 		field=self.field_w.getValue()
-		vFr=self.vFr_w.value
-		vFrEq=self.vFrEq_w.value
-		vTo=self.vTo_w.value
-		vToEq=self.vToEq_w.value
-		reverse=self.reverse_w.value
+		stat=self.stat_w.value
+		newfld=self.newfld_w.value
 
-		rFr="("
-		rTo=")"
-		if vFrEq:
-			rFr="["
-		if vToEq:
-			rTo="]"
-		range_="%s%s,%s%s"%(rFr,vFr,vTo,rTo)
-
-		params=[]
+		flds=[]
 		if key!="":
-			params.append("k=\""+key+"\"")
-		params.append("f=\""+field+"\"")
-		params.append("c=\""+range_+"\"")
-		if reverse:
-			params.append("r=True")
-		params.append("i=\""+self.iFile+"\"")
-		params.append("o=\""+self.oFile+"\"")
+			flds.append(key)
+		flds.append(field)
+		params1="f='%s',i='%s'"%(",".join(flds),self.iFile)
+		
+		params2=""
+		if key!="":
+			params2+="k='%s'"%(key)
+		if newfld=="":
+			params2+=",f='%s'"%(field)
+		else:
+			params2+=",f='%s:%s'"%(field,newfld)
+		params2+=",c='%s',o='%s'"%(stat,self.oFile)
 
 		header="""
 #################################
-# mselnum_w.pyの自動生成スクリプト
+# mstats_w.pyの自動生成スクリプト
 # version: %s
 # 実行日時: %s
 #################################
@@ -65,13 +66,13 @@ class mselnum_w(object):
 
 		lib="""
 import nysol.mcmd as nm
-nm.setMsgFlg(True)
 """
 		script="""
 f=None
-f<<=nm.mselnum(%s)
+f<<=nm.mcut(%s)
+f<<=nm.mstats(%s)
 f.run(msg='on')
-"""%(",".join(params))
+"""%(params1,params2)
 
 		output="""
 # ファイル出力された結果
@@ -86,6 +87,14 @@ oFile="%s"
 
 		# 出力path画面に移動
 		self.tab.selected_index = 2
+
+	def getHeader(self,csv):
+		flds=None
+		with open(csv) as f:
+			line=f.readline()
+		if line:
+			flds=line.strip().split(",")
+		return flds
 
 	def iFile_h(self,files):
 		if len(files)==0:
@@ -103,18 +112,6 @@ oFile="%s"
 		# parameters画面に移動
 		self.tab.selected_index = 1
 
-	def stats_h(self,b):
-		field=self.field_w.getValue()
-		self.msg_w.value="\"%s\" 項目の統計量を計算中..."%(field)
-		f=None
-		f<<=nm.mcut(f=field,i=self.iFile)
-		f<<=nm.msummary(f=field,c="min,median,mean,max")
-		f<<=nm.writelist(header=True)
-		rsl=f.run()
-		#print(rsl)
-		self.result_w.value=str(rsl)
-		self.msg_w.value="\"%s\" 項目の統計量を計算中...完了"%(field)
-
 	def widget(self):
 		### iFileBox
 		if_config={
@@ -123,7 +120,7 @@ oFile="%s"
 			"propertyRows":20,
 			"actionHandler":self.iFile_h,
 			"actionTitle":"選択"
-	   }
+	  }
 		self.iFile_w=fileBrowser_w(self.iPath,if_config)
 
 		### oFileBox
@@ -131,8 +128,7 @@ oFile="%s"
 			"multiSelect":False,
 			"property":True,
 			"propertyRows":100,
-			"actionHandler":None,
-			"actionTitle":"選択"
+			"actionHandler":None
 	   }
 		self.oPath_w=fileBrowser_w(self.oPath,of_config)
 
@@ -154,7 +150,7 @@ oFile="%s"
 		# key 項目
 		config_k={
 			"options":[],
-			"title":"key単位選択の項目",
+			"title":"集計単位の項目",
 			"rows":5,
 			"width":300,
 			"blank":True,
@@ -166,7 +162,7 @@ oFile="%s"
 		# field 項目
 		config_f={
 			"options":[],
-			"title":"item",
+			"title":"集計対象の項目",
 			"rows":5,
 			"width":300,
 			"multiSelect":False,
@@ -175,25 +171,18 @@ oFile="%s"
 		self.field_w=selfield_w(config_f)
 		pbox.append(widgets.HBox([self.field_w.widget(),self.key_w.widget()]))
 
-		# 範囲
-		self.vFr_w=widgets.Text(description="from:",value="",layout=Layout(width='300px'))
-		self.vFrEq_w=widgets.Checkbox(value=True, description='以上', disabled=False)
-		frBox=widgets.HBox([self.vFr_w,self.vFrEq_w])
-		self.vTo_w=widgets.Text(description="to:",value="",layout=Layout(width='300px'))
-		self.vToEq_w=widgets.Checkbox(value=True, description='以下', disabled=False)
-		toBox=widgets.HBox([self.vTo_w,self.vToEq_w])
-		pbox.append(frBox)
-		pbox.append(toBox)
+		# 新項目名
+		self.newfld_w=widgets.Text(description="出力項目名",value="",layout=Layout(width='300px'))
+		newfldL_w=widgets.Label(value="指定しなければ集計対象項目名と同じ名前になる",disabled=True)
+		pbox.append(widgets.HBox([self.newfld_w,newfldL_w]))
 
-		# その他parameters
-		self.reverse_w=widgets.Checkbox(value=False, description='条件反転', disabled=False)
-		pbox.append(self.reverse_w)
+		# 統計量
+		statsList=["sum", "mean", "count", "ucount", "devsq", "var", "uvar", "sd", "usd", "USD", "cv", "min", "qtile1", "median", "qtile3", "max", "range", "qrange", "mode", "skew", "uskew", "kurt", "ukurt"]
+		self.stat_w=widgets.Dropdown(description="統計量",options=statsList, value='sum', disabled=False)
+		pbox.append(self.stat_w)
 
-		search_w=widgets.Button(description="項目統計")
-		search_w.on_click(self.stats_h)
-		self.result_w=widgets.Textarea(rows=10,disabled=True,layout=widgets.Layout(width='99%'))
-		subbox1=widgets.VBox([search_w,self.result_w])
-		pbox.append(subbox1)
+		help_w=widgets.Textarea(value=self.help(),rows=4,layout=Layout(width='100%'),disabled=True)
+		pbox.append(help_w)
 
 		paramBox=widgets.VBox(pbox)
 
@@ -213,7 +202,7 @@ oFile="%s"
 		self.tab = widgets.Tab()
 		self.tab.children = children
 		self.tab.set_title(0, "入力ファイル選択")
-		self.tab.set_title(1, "行選択")
+		self.tab.set_title(1, "統計量の計算")
 		self.tab.set_title(2, "基本スクリプト")
 		self.tab.set_title(3, "出力系スクリプト")
 		self.tab.set_title(4, "出力パスブラウザ")

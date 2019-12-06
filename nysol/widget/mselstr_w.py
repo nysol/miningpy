@@ -7,11 +7,13 @@ import ipywidgets as widgets
 from ipywidgets import Button, Layout, Label
 import os
 import json
+import copy
 from datetime import datetime
 from IPython.display import clear_output
 
 from nysol.widget.fileBrowser_w import fileBrowser_w
 from nysol.widget.selfield_w import selfield_w
+import nysol.widget.lib as wlib
 import nysol.mcmd as nm
 
 ####################################################################
@@ -55,21 +57,21 @@ class mselstr_w(object):
 			head=False
 			tail=False
 
-		param={}
-		param["i"]=self.iFile
-		param["o"]=self.oFile
-		param["f"]=field
-		param["v"]=value
+		params=[]
 		if key!="":
-			param["k"]=key
+			params.append("k=\""+key+"\"")
+		params.append("f=\""+field+"\"")
+		params.append("v=\""+value+"\"")
 		if reverse:
-			param["r"]=True
+			params.append("r=True")
 		if head:
-			param["head"]=True
+			params.append("head=True")
 		if tail:
-			param["tail"]=True
+			params.append("tail=True")
 		if sub:
-			param["sub"]=True
+			params.append("sub=True")
+		params.append("i=\""+self.iFile+"\"")
+		params.append("o=\""+self.oFile+"\"")
 
 		header="""
 #################################
@@ -80,14 +82,14 @@ class mselstr_w(object):
 """%(self.version,self.date)
 
 		lib="""
-from datetime import datetime
 import nysol.mcmd as nm
+nm.setMsgFlg(True)
 """
 		script="""
-print("## START",datetime.now())
-nm.mselstr(%s).run(msg='on')
-print("## END",datetime.now())
-"""%(param)
+f=None
+f<<=nm.mselstr(%s)
+f.run(msg='on')
+"""%(",".join(params))
 
 		output="""
 # ファイル出力された結果
@@ -103,14 +105,6 @@ oFile="%s"
 		# 出力path画面に移動
 		self.tab.selected_index = 2
 
-	def getHeader(self,csv):
-		flds=None
-		with open(csv) as f:
-			line=f.readline()
-		if line:
-			flds=line.strip().split(",")
-		return flds
-
 	def iFile_h(self,files):
 		if len(files)==0:
 			return
@@ -120,9 +114,9 @@ oFile="%s"
 		self.fText_w.value=self.iFile_w.propText() # ファイル内容
 
 		# フィールドリスト
-		fldNames=self.getHeader(self.fName_w.value)
-		self.key_w.addOptions(fldNames)
-		self.field_w.addOptions(fldNames)
+		fldNames=wlib.getCSVheader(self.fName_w.value)
+		self.key_w.addOptions(copy.copy(fldNames))
+		self.field_w.addOptions(copy.copy(fldNames))
 
 		# parameters画面に移動
 		self.tab.selected_index = 1
@@ -160,7 +154,6 @@ oFile="%s"
 			f<<=nm.mselstr(f=field,sub=sub,head=head,tail=tail,r=reverse,v=value)
 		f<<=nm.muniq(k=field)
 		rsl=f.run()
-		#print(rsl)
 		self.result_w.options=[v[0] for v in rsl]
 		self.msg_w.value="\"%s\" 項目の値 \"%s\" を検索中...完了"%(field,value)
 
@@ -172,7 +165,7 @@ oFile="%s"
 			"propertyRows":20,
 			"actionHandler":self.iFile_h,
 			"actionTitle":"選択"
-	   }
+	  }
 		self.iFile_w=fileBrowser_w(self.iPath,if_config)
 
 		### oFileBox
@@ -180,13 +173,12 @@ oFile="%s"
 			"multiSelect":False,
 			"property":True,
 			"propertyRows":100,
-			"actionHandler":None,
-			"actionTitle":"選択"
+			"actionHandler":None
 	   }
 		self.oPath_w=fileBrowser_w(self.oPath,of_config)
 
 		# ボタン系
-		exeButton_w=widgets.Button(description="実行")
+		exeButton_w=widgets.Button(description="スクリプト生成")
 		exeButton_w.style.button_color = 'lightgreen'
 		exeButton_w.on_click(self.exe_h)
 		buttons_w=widgets.HBox([exeButton_w])
@@ -201,7 +193,7 @@ oFile="%s"
 		pbox.append(self.fText_w)
 
 		# key 項目
-		config={
+		config_k={
 			"options":[],
 			"title":"key単位選択の項目",
 			"rows":5,
@@ -210,10 +202,10 @@ oFile="%s"
 			"multiSelect":False,
 			"message":None
 		}
-		self.key_w=selfield_w(config)
+		self.key_w=selfield_w(config_k)
 
 		# field 項目
-		config={
+		config_f={
 			"options":[],
 			"title":"item",
 			"rows":5,
@@ -221,7 +213,7 @@ oFile="%s"
 			"multiSelect":False,
 			"message":None
 		}
-		self.field_w=selfield_w(config)
+		self.field_w=selfield_w(config_f)
 		pbox.append(widgets.HBox([self.field_w.widget(),self.key_w.widget()]))
 
 		# 値
@@ -252,12 +244,14 @@ oFile="%s"
 		children.append(paramBox)
 		children.append(self.script_w)
 		children.append(self.output_w)
+		children.append(self.oPath_w.widget())
 		self.tab = widgets.Tab()
 		self.tab.children = children
 		self.tab.set_title(0, "入力ファイル選択")
 		self.tab.set_title(1, "行選択")
 		self.tab.set_title(2, "基本スクリプト")
 		self.tab.set_title(3, "出力系スクリプト")
+		self.tab.set_title(4, "出力パスブラウザ")
 
 		# メッセージ窓
 		self.msg_w = widgets.Text(value="",layout=widgets.Layout(width='100%'),disabled=True)

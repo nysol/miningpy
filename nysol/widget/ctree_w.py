@@ -8,6 +8,7 @@ import ipywidgets as widgets
 from ipywidgets import Button, Layout, Label
 import os
 import json
+import copy
 from datetime import datetime
 from IPython.display import clear_output
 
@@ -174,10 +175,10 @@ pred.charts # モデル評価(チャート)
 
 		# フィールドリスト
 		fldNames=self.getHeader(self.iFile)
-		self.id_w.addOptions(fldNames)
-		self.y_w.addOptions(fldNames)
-		self.num_w.addOptions(fldNames)
-		self.cat_w.addOptions(fldNames)
+		self.id_w.addOptions(copy.copy(fldNames))
+		self.y_w.addOptions(copy.copy(fldNames))
+		self.num_w.addOptions(copy.copy(fldNames))
+		self.cat_w.addOptions(copy.copy(fldNames))
 
 		# parameters画面に移動
 		self.tab.selected_index = 1
@@ -194,7 +195,7 @@ pred.charts # モデル評価(チャート)
 		self.iFile_w=fileBrowser_w(self.iPath,if_config)
 
 		# ボタン系
-		exeButton_w=widgets.Button(description="実行")
+		exeButton_w=widgets.Button(description="スクリプト生成")
 		exeButton_w.style.button_color = 'lightgreen'
 		exeButton_w.on_click(self.exe_h)
 		buttons_w=widgets.HBox([exeButton_w])
@@ -213,7 +214,7 @@ pred.charts # モデル評価(チャート)
 		pbox.append(oName_w)
 
 		# id 項目
-		config={
+		config_id={
 			"options":[],
 			"title":"id項目(指定しなくても良い)",
 			"rows":5,
@@ -222,11 +223,10 @@ pred.charts # モデル評価(チャート)
 			"multiSelect":False,
 			"message":None
 		}
-		self.id_w=selfield_w(config)
-		config={}
+		self.id_w=selfield_w(config_id)
 	
 		# 数値変数 項目
-		config={
+		config_n={
 			"options":[],
 			"title":"数値変数(複数選択可)",
 			"rows":5,
@@ -235,10 +235,10 @@ pred.charts # モデル評価(チャート)
 			"multiSelect":True,
 			"message":None
 		}
-		self.num_w=selfield_w(config)
+		self.num_w=selfield_w(config_n)
 
 		# cat変数 項目
-		config={
+		config_c={
 			"options":[],
 			"title":"カテゴリ変数(複数選択可)",
 			"rows":5,
@@ -247,10 +247,10 @@ pred.charts # モデル評価(チャート)
 			"multiSelect":True,
 			"message":None
 		}
-		self.cat_w=selfield_w(config)
+		self.cat_w=selfield_w(config_c)
 
 		# y 項目
-		config={
+		config_y={
 			"options":[],
 			"title":"出力変数",
 			"rows":5,
@@ -258,7 +258,7 @@ pred.charts # モデル評価(チャート)
 			"multiSelect":False,
 			"message":None
 		}
-		self.y_w=selfield_w(config)
+		self.y_w=selfield_w(config_y)
 		pbox.append(widgets.HBox([self.id_w.widget(),self.y_w.widget()]))
 		pbox.append(widgets.HBox([self.num_w.widget(),self.cat_w.widget()]))
 

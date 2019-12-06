@@ -7,6 +7,7 @@ import ipywidgets as widgets
 from ipywidgets import Button, Layout, Label
 import os
 import json
+import copy
 from datetime import datetime
 from IPython.display import clear_output
 
@@ -83,7 +84,7 @@ top=%d # 抽出上位件数(supportの大きい順)
 		script="""
 print("## START",datetime.now())
 nt.mitemset(i=traFile,
-				class=klass,
+				cls=klass,
 				tid=tid,
 				item=item,
 				O=oPath,
@@ -155,9 +156,9 @@ tid_pats=ds.mkTable(tConfig,tid_patsCSV)
 
 		# フィールドリスト
 		fldNames=self.getHeader(self.traFile_w.value)
-		self.traID_w.addOptions(fldNames)
-		self.item_w.addOptions(fldNames)
-		self.class_w.addOptions(fldNames)
+		self.traID_w.addOptions(copy.copy(fldNames))
+		self.item_w.addOptions(copy.copy(fldNames))
+		self.class_w.addOptions(copy.copy(fldNames))
 
 		# parameters画面に移動
 		self.tab.selected_index = 1
@@ -195,7 +196,7 @@ tid_pats=ds.mkTable(tConfig,tid_patsCSV)
 
 
 		# ボタン系
-		exeButton_w=widgets.Button(description="実行")
+		exeButton_w=widgets.Button(description="スクリプト生成")
 		exeButton_w.style.button_color = 'lightgreen'
 		exeButton_w.on_click(self.exe_h)
 		buttons_w=widgets.HBox([exeButton_w])
@@ -214,7 +215,7 @@ tid_pats=ds.mkTable(tConfig,tid_patsCSV)
 		pbox.append(oName_w)
 
 		# traID 項目
-		config={
+		config_t={
 			"options":[],
 			"title":"トランザクションID",
 			"rows":5,
@@ -222,10 +223,10 @@ tid_pats=ds.mkTable(tConfig,tid_patsCSV)
 			"multiSelect":False,
 			"message":None
 		}
-		self.traID_w=selfield_w(config)
+		self.traID_w=selfield_w(config_t)
 
 		# item 項目
-		config={
+		config_i={
 			"options":[],
 			"title":"アイテム項目",
 			"rows":5,
@@ -233,10 +234,10 @@ tid_pats=ds.mkTable(tConfig,tid_patsCSV)
 			"multiSelect":False,
 			"message":None
 		}
-		self.item_w=selfield_w(config)
+		self.item_w=selfield_w(config_i)
 
 		# class 項目
-		config={
+		config_c={
 			"options":[],
 			"title":"クラス項目",
 			"rows":5,
@@ -245,7 +246,7 @@ tid_pats=ds.mkTable(tConfig,tid_patsCSV)
 			"multiSelect":False,
 			"message":None
 		}
-		self.class_w=selfield_w(config)
+		self.class_w=selfield_w(config_c)
 		pbox.append(widgets.HBox([self.traID_w.widget(),self.item_w.widget(),self.class_w.widget()]))
 
 		# 各種しきい値

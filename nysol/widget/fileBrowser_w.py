@@ -4,6 +4,8 @@ from __future__ import print_function
 from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as widgets
 #from ipywidgets import Button, Layout
+import nysol.widget.lib as wlib
+import csv
 import os
 
 class fileBrowser_w(object):
@@ -38,12 +40,14 @@ class fileBrowser_w(object):
 			self.dirs.append("..")
 		if(os.path.isdir(self.path)):
 			for f in os.listdir(self.path):
+				if f[0]==".":
+					continue
 				ff = self.path + "/" + f
 				if os.path.isdir(ff):
 					self.dirs.append(f)
 				else:
 					self.files.append(f)
-		self.fList_w.options=self.dirs+self.files
+		self.fList_w.options=sorted(self.dirs)+sorted(self.files)
 
 	# HANDLER
 	# ディレクトリの変更
@@ -55,7 +59,7 @@ class fileBrowser_w(object):
 		else:
 			fValue=self.fList_w.value
 		if fValue == '..':
-			 path = os.path.split(self.path)[0]
+			path = os.path.split(self.path)[0]
 		else:
 			if self.path=="/":
 				path = self.path + fValue
@@ -66,11 +70,23 @@ class fileBrowser_w(object):
 
 		self.path=path
 		self.fList_w.options=self.dirs+self.files
-		#self.fList_w.index=[0] # 先頭(..)を選択状態にする
-		#self.fList_w.value=['..'] # 先頭(..)を選択状態にする
-		#print(self.fList_w.keys)
 		self.pwd_w.value=self.path
 		self.setFileList()
+
+	def upd_h(self,b):
+		self.setFileList()
+
+	# fomatter
+	def formatter_h(self,b):
+		if self.config["multiSelect"] and len(self.fList_w.value)!=1:
+			return
+		if self.config["multiSelect"]:
+			fValue=self.fList_w.value[0]
+		else:
+			fValue=self.fList_w.value
+		fName=self.path + "/"+fValue
+		script=wlib.sampleFormatter(fName)
+		self.script_w.value=script
 
 	## HANDLER
 	## chooseボタンが押されたときにcallされる
@@ -103,25 +119,15 @@ class fileBrowser_w(object):
 		if self.config["multiSelect"] and len(event["new"])!=1:
 			return
 
+
 		propText=""
 		if self.config["multiSelect"]:
 			fName=self.pwd_w.value+"/"+event["new"][0]
 		else:
 			fName=self.chosenFiles[0]
+		self.fileAttr_w.value=wlib.getFileAttribute(fName)
 		if os.path.isfile(fName):
-			try:
-				with open(fName, 'r') as f:
-					ext = os.path.splitext(fName)
-					for i in range(self.config["propertyRows"]):
-						line=f.readline()
-						if not line:
-							break
-						#if ext[1]==".csv":
-						#	propText+=line.replace(",","\t")
-						#else:
-						propText+=line
-			except:
-				pass
+			propText=wlib.sampleTXT(fName,50)
 		self.fileProperty.value=propText
 
 	def propText(self):
@@ -133,14 +139,16 @@ class fileBrowser_w(object):
 		#print(self.pwd_w.keys)
 
 		# ボタン系
-		cd_w=widgets.Button( description='cd')
+		cd_w=widgets.Button( description='cd',layout=widgets.Layout(width='70px'))
 		cd_w.on_click(self.cd_h) # HANDLER
+		upd_w=widgets.Button( description='更新',layout=widgets.Layout(width='70px'))
+		upd_w.on_click(self.upd_h) # HANDLER
 		if self.config["actionHandler"] is None:
-			buttons=widgets.HBox([cd_w])#,self.cancelButton])
+			buttons=widgets.HBox([cd_w,upd_w])#,self.cancelButton])
 		else:
 			action_w=widgets.Button( description=self.config["actionTitle"])
 			action_w.on_click(self.action_h) # HANDLER
-			buttons=widgets.HBox([cd_w,action_w])#,self.cancelButton])
+			buttons=widgets.HBox([cd_w,upd_w,action_w])#,self.cancelButton])
 
 		# file list系
 		if self.config["multiSelect"]:
@@ -149,13 +157,19 @@ class fileBrowser_w(object):
 			self.fList_w=widgets.Select(options=[],rows=14) # file list
 		self.fList_w.observe(self.fList_h, names='value') # HANDLER
 		if self.config["property"]:
-			self.fileProperty=widgets.Textarea(rows=11,disabled=True,layout=widgets.Layout(width='99%')) # 
-			fListBox_w=widgets.HBox([self.fList_w,self.fileProperty])
+			self.fileAttr_w=widgets.Textarea(rows=2,disabled=True,layout=widgets.Layout(width='99%')) # 
+			self.fileProperty=widgets.Textarea(rows=8,disabled=True,layout=widgets.Layout(width='99%')) # 
+			fp_w=widgets.VBox([self.fileAttr_w,self.fileProperty],layout=widgets.Layout(width='99%'))
+			fListBox_w=widgets.HBox([self.fList_w, fp_w])
 		else:
 			fListBox_w=widgets.HBox([self.fList_w])
 
+		formatter_w=widgets.Button( description='Formatter')
+		formatter_w.on_click(self.formatter_h) # HANDLER
+		self.script_w=widgets.Textarea(rows=3,layout=widgets.Layout(width='99%'))
+		scriptBox_w=widgets.HBox([formatter_w,self.script_w])
+
 		# 統合
-		self.fileBox=widgets.VBox([self.pwd_w,buttons,fListBox_w])
+		self.fileBox=widgets.VBox([self.pwd_w,buttons,fListBox_w,scriptBox_w])
 		self.setFileList()
 		return self.fileBox
-
