@@ -18,15 +18,13 @@ import nysol.mcmd as nm
 
 ####################################################################
 class mstats_w(object):
-	def __init__(self,iPath,oFile):
+	def __init__(self):
 		self.version="0.10"
 		self.date=datetime.now()
 
-		clear_output() # jupyter上の出力領域のクリア
-		self.iPath=os.path.abspath(os.path.expanduser(iPath))
-		self.oFile=os.path.abspath(os.path.expanduser(oFile))
-		self.oPath=os.path.dirname(self.oFile)
-		os.makedirs(self.oPath, exist_ok=True)
+		self.iFile=None
+		self.oPath=None
+		self.oFile=None
 
 	def help(self):
 		return """sum:合計, mean:纂述平均, count:件数, ucount:件数-1, devsq:偏差平方和, "var":分散, "uvar":不偏分散
@@ -35,11 +33,19 @@ qtile3:第三四分位点, max:最大値, range:max-min, qrange:qtile3-qtile1, m
 uskew:不偏歪度, kurt:尖度, ukurt:不偏尖度
 """
 
-	def exe_h(self,b):
+	def setParent(self,parent):
+		self.parent=parent
+
+	def exe(self,script_w,output_w):
 		key=self.key_w.getValue()
 		field=self.field_w.getValue()
 		stat=self.stat_w.value
 		newfld=self.newfld_w.value
+		oFile=self.oFile_w.value
+		if oFile=="":
+			self.parent.msg_w.value="##ERROR: 出力ファイルが入力されていません"
+			return False
+		oFile=self.oPath+"/"+oFile
 
 		flds=[]
 		if key!="":
@@ -54,7 +60,7 @@ uskew:不偏歪度, kurt:尖度, ukurt:不偏尖度
 			params2+=",f='%s'"%(field)
 		else:
 			params2+=",f='%s:%s'"%(field,newfld)
-		params2+=",c='%s',o='%s'"%(stat,self.oFile)
+		params2+=",c='%s',o='%s'"%(stat,oFile)
 
 		header="""
 #################################
@@ -80,64 +86,44 @@ oFile="%s"
 """%(self.oFile)
 
 		# script tabにセット
-		self.script_w.value = header+lib+script
+		script_w.value = header+lib+script
 
 		# outputscript tabにセット
-		self.output_w.value = output
+		output_w.value = output
 
-		# 出力path画面に移動
-		self.tab.selected_index = 2
+		return True
 
-	def iFile_h(self,files):
-		if len(files)==0:
-			return
+	def setiFile(self,iFiles,propText):
+		self.iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.propText=propText
+
 		# parameter設定tabに反映
-		self.iFile=files[0] # ファイル名表示
 		self.fName_w.value=self.iFile
-		self.fText_w.value=self.iFile_w.propText() # ファイル内容
+		self.fText_w.value=self.propText # ファイル内容
+		if self.iFile is None or not os.path.isfile(self.iFile):
+			self.parent.msg_w.value = "##ERROR: 入力ファイルが選ばれていません。"
+			return
 
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.fName_w.value)
+		fldNames=wlib.getCSVheader(self.iFile)
 		self.key_w.addOptions(copy.copy(fldNames))
 		self.field_w.addOptions(copy.copy(fldNames))
 
-		# parameters画面に移動
-		self.tab.selected_index = 1
+	def setoPath(self,oPath):
+		self.oPath=os.path.abspath(os.path.expanduser(oPath))
+		self.oPath_w.value=self.oPath
 
 	def widget(self):
-		### iFileBox
-		if_config={
-			"multiSelect":False,
-			"property":True,
-			"propertyRows":20,
-			"actionHandler":self.iFile_h,
-			"actionTitle":"選択"
-	  }
-		self.iFile_w=fileBrowser_w(self.iPath,if_config)
-
-		### oFileBox
-		of_config={
-			"multiSelect":False,
-			"property":True,
-			"propertyRows":100,
-			"actionHandler":None
-	   }
-		self.oPath_w=fileBrowser_w(self.oPath,of_config)
-
-		# ボタン系
-		exeButton_w=widgets.Button(description="スクリプト生成")
-		exeButton_w.style.button_color = 'lightgreen'
-		exeButton_w.on_click(self.exe_h)
-		buttons_w=widgets.HBox([exeButton_w])
-
-		# parameters
 		pbox=[]
-
 		# ファイル名とファイル内容
 		self.fName_w =widgets.Text(description="file name",value="",layout=Layout(width='100%'),disabled=True)
 		self.fText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
 		pbox.append(self.fName_w)
 		pbox.append(self.fText_w)
+		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=True)
+		pbox.append(self.oPath_w)
+		self.oFile_w =widgets.Text(description="ファイル名",value="",layout=Layout(width='100%'),disabled=False)
+		pbox.append(self.oFile_w)
 
 		# key 項目
 		config_k={
@@ -176,32 +162,6 @@ oFile="%s"
 		help_w=widgets.Textarea(value=self.help(),rows=4,layout=Layout(width='100%'),disabled=True)
 		pbox.append(help_w)
 
-		paramBox=widgets.VBox(pbox)
-
-		# スクリプト出力
-		self.script_w =widgets.Textarea(value="",rows=15,layout=Layout(width='100%'),disabled=False)
-
-		# 出力系スクリプト出力
-		self.output_w =widgets.Textarea(value="",rows=15,layout=Layout(width='100%'),disabled=False)
-
-		### tabコンテナ
-		children=[]
-		children.append(self.iFile_w.widget())
-		children.append(paramBox)
-		children.append(self.script_w)
-		children.append(self.output_w)
-		children.append(self.oPath_w.widget())
-		self.tab = widgets.Tab()
-		self.tab.children = children
-		self.tab.set_title(0, "入力ファイル選択")
-		self.tab.set_title(1, "統計量の計算")
-		self.tab.set_title(2, "基本スクリプト")
-		self.tab.set_title(3, "出力系スクリプト")
-		self.tab.set_title(4, "出力パスブラウザ")
-
-		# メッセージ窓
-		self.msg_w = widgets.Text(value="",layout=widgets.Layout(width='100%'),disabled=True)
-
-		box=widgets.VBox([buttons_w,self.msg_w,self.tab])
+		box=widgets.VBox(pbox)
 		return box
 

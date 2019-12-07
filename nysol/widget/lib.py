@@ -26,6 +26,24 @@ df
 		para={"csvFile":"./xxa" , "top":10}
 		print(self.__doc__.format(**para))
 
+
+class csv2pivot(object):
+	def __init__(self,csvFile):
+		self._version="0.10"
+		self._date=datetime.now()
+
+		self.params={"csvFile":csvFile}
+
+	def script(self):
+		scp="""### 自動生成スクリプト
+import pandas as pd
+from pivottablejs import pivot_ui
+# csvをpandas DataFrameに変換(nrowsで変換する行数を指定している)
+df = pd.read_csv("{csvFile}", encoding="utf-8")
+pivot_ui(df)
+""".format(**self.params)
+		return scp
+
 class csv2pd(object):
 	def __init__(self,csvFile,top=50):
 		self._version="0.10"
@@ -47,12 +65,6 @@ df # 表示
 	def run(self):
 		scp=self.script()
 		exec(scp)
-
-def sampleFormatter(fName):
-	script=None
-	if fName[-4:]==".csv":
-		gen=csv2pd(fName,50)
-	return gen.script()
 
 def getFileAttribute(fName):
 	ct=datetime.fromtimestamp(os.path.getctime(fName))

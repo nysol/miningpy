@@ -17,16 +17,18 @@ import nysol.widget.lib as wlib
 
 ####################################################################
 class mitemset_w(object):
-	def __init__(self,iPath,oPath):
+	def __init__(self):
 		self.version="0.10"
 		self.date=datetime.now()
 
-		clear_output() # jupyter上の出力領域のクリア
-		self.iPath=os.path.abspath(os.path.expanduser(iPath))
-		self.oPath=os.path.abspath(os.path.expanduser(oPath))
-		os.makedirs(self.oPath, exist_ok=True)
+		self.iFile=None
+		self.oPath=None
+		self.oFile=None
 
-	def exe_h(self,b):
+	def setParent(self,parent):
+		self.parent=parent
+
+	def exe(self,script_w,output_w):
 		traFile=self.traFile
 		tid=self.traID_w.getValue()
 		item=self.item_w.getValue()
@@ -49,8 +51,9 @@ class mitemset_w(object):
 """%(self.version,self.date)
 
 		lib="""
-from datetime import datetime
 import nysol.take as nt
+import nysol.mcmd as nm
+nm.setMsgFlg(True)
 """
 
 		params="""
@@ -83,7 +86,6 @@ top=%d # 抽出上位件数(supportの大きい順)
 )
 
 		script="""
-print("## START",datetime.now())
 nt.mitemset(i=traFile,
 				cls=klass,
 				tid=tid,
@@ -96,12 +98,11 @@ nt.mitemset(i=traFile,
 				u=maxLen,
 				p=minPpr,
 				top=top).run()
-print("## END",datetime.now())
 """
 
 		# 出力系
 		output="""
-import nysol.mining.dataset as ds
+import pandas as pd
 
 # ファイル出力された結果
 # 頻出アイテム集合
@@ -112,49 +113,36 @@ tid_patsCSV="%s/tid_pats.csv"
 outCount=len(open("%s/patterns.csv").readlines())
 print(outCount)
 
-# pid,size,count,total,support,lift,pattern
-# 0,1,4550,20177,0.2255042871,1,生ビール（中）
-# 1,1,3450,20177,0.1709867671,1,ご飯
-pConfig={}
-pConfig["type"]="table"
-pConfig["names"]=["pid","size","count","total","support","lift","pattern"]
-pConfig["convs"]=["id()","as('int64')","as('int64')","numeric()","numeric()","as('object')"]
-pattern=ds.mkTable(pConfig,patternCSV)
-
-# traID,pid
-# 1,912
-tConfig={}
-tConfig["type"]="table"
-tConfig["names"]=["traID","pid"]
-tConfig["convs"]=["id()","as('object')"]
-tid_pats=ds.mkTable(tConfig,tid_patsCSV)
+pattern=pd.read_csv(patternCSV)
+tid_pats=pd.read_csv(tid_patsCSV)
+pattern
 """%(self.oPath,self.oPath,self.oPath)
 
 		# script tabにセット
-		self.script_w.value = header+lib+params+script
+		script_w.value = header+lib+params+script
 
 		# outputscript tabにセット
-		self.output_w.value = output
+		output_w.value = output
 
-		# 出力path画面に移動
-		self.tab.selected_index = 2
+		return True
 
-	def iFile_h(self,files):
-		if len(files)==0:
-			return
+	def setiFile(self,iFiles,propText):
+		self.traFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.propText=propText
+
 		# parameter設定tabに反映
-		self.traFile=files[0] # ファイル名表示
 		self.traFile_w.value=self.traFile
-		self.traFileTxt_w.value=self.iFile_w.propText() # ファイル内容
+		self.traFileTxt_w.value=self.propText
 
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.traFile_w.value)
+		fldNames=wlib.getCSVheader(self.traFile)
 		self.traID_w.addOptions(copy.copy(fldNames))
 		self.item_w.addOptions(copy.copy(fldNames))
 		self.class_w.addOptions(copy.copy(fldNames))
 
-		# parameters画面に移動
-		self.tab.selected_index = 1
+	def setoPath(self,oPath):
+		self.oPath=os.path.abspath(os.path.expanduser(oPath))
+		self.oPath_w.value=self.oPath
 
 	#  type= : 抽出するパターンの型【オプション:default:F, F:頻出集合, C:飽和集合, M:極大集合】
 	#  s=    : 最小支持度(全トランザクション数に対する割合による指定)【オプション:default:0.05, 0以上1以下の実数】
@@ -167,34 +155,6 @@ tid_pats=ds.mkTable(tConfig,tid_patsCSV)
 	#  g=    : 最小増加率【オプション】
 	#  top=  : 列挙するパターン数の上限【オプション:default:制限なし】*2
 	def widget(self):
-		### iFileBox
-		if_config={
-			"multiSelect":False,
-			"property":True,
-			"propertyRows":20,
-			"actionHandler":self.iFile_h,
-			"actionTitle":"選択"
-	   }
-		self.iFile_w=fileBrowser_w(self.iPath,if_config)
-
-		### oFileBox
-		of_config={
-			"multiSelect":False,
-			"property":True,
-			"propertyRows":100,
-			"actionHandler":None,
-			"actionTitle":"選択"
-	   }
-		self.oPath_w=fileBrowser_w(self.oPath,of_config)
-
-
-		# ボタン系
-		exeButton_w=widgets.Button(description="スクリプト生成")
-		exeButton_w.style.button_color = 'lightgreen'
-		exeButton_w.on_click(self.exe_h)
-		buttons_w=widgets.HBox([exeButton_w])
-
-		# parameters
 		pbox=[]
 
 		# ファイル名とファイル内容
@@ -202,10 +162,8 @@ tid_pats=ds.mkTable(tConfig,tid_patsCSV)
 		self.traFileTxt_w =widgets.Textarea(value="",rows=5,layout=Layout(width='99%'),disabled=True)
 		pbox.append(self.traFile_w)
 		pbox.append(self.traFileTxt_w)
-
-		# 出力パス名
-		oName_w =widgets.Text(description="出力パス",value=self.oPath,layout=Layout(width='100%'),disabled=True)
-		pbox.append(oName_w)
+		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=True)
+		pbox.append(self.oPath_w)
 
 		# traID 項目
 		config_t={
@@ -261,32 +219,6 @@ tid_pats=ds.mkTable(tConfig,tid_patsCSV)
 		self.top_w=widgets.IntSlider(description='top', value=1000, min=1, max=10000, step=1)
 		pbox.append(self.top_w)
 
-		paramBox=widgets.VBox(pbox)
-
-		# スクリプト出力
-		self.script_w =widgets.Textarea(value="",rows=15,layout=Layout(width='100%'),disabled=False)
-
-		# 出力系スクリプト出力
-		self.output_w =widgets.Textarea(value="",rows=15,layout=Layout(width='100%'),disabled=False)
-
-		### tabコンテナ
-		children=[]
-		children.append(self.iFile_w.widget())
-		children.append(paramBox)
-		children.append(self.script_w)
-		children.append(self.output_w)
-		children.append(self.oPath_w.widget())
-		self.tab = widgets.Tab()
-		self.tab.children = children
-		self.tab.set_title(0, "トランザクション")
-		self.tab.set_title(1, "アイテム集合列挙")
-		self.tab.set_title(2, "基本スクリプト")
-		self.tab.set_title(3, "出力系スクリプト")
-		self.tab.set_title(4, "出力パスブラウザ")
-
-		# メッセージ窓
-		self.msg_w = widgets.Text(value="",layout=widgets.Layout(width='100%'),disabled=True)
-
-		box=widgets.VBox([buttons_w,self.msg_w,self.tab])
+		box=widgets.VBox(pbox)
 		return box
 

@@ -25,6 +25,10 @@ class fileBrowser_w(object):
 			self.config["actionHandler"]=None
 		if "actionTitle" not in self.config:
 			self.config["actionTitle"]="choose"
+		if "delHandler" not in self.config:
+			self.config["delHandler"]=None
+		if "newHandler" not in self.config:
+			self.config["newHandler"]=None
 		if "message" not in self.config:
 			self.config["message"]=None
 		self.message=self.config["message"]
@@ -76,8 +80,26 @@ class fileBrowser_w(object):
 	def upd_h(self,b):
 		self.setFileList()
 
+	def del_h(self,b):
+		if self.config["multiSelect"] and len(self.fList_w.value)!=1:
+			return
+		if self.config["multiSelect"]:
+			fList=self.fList_w.value
+		else:
+			fList=[self.fList_w.value]
+		for f in fList:
+			ff=self.path+"/"+f
+			if os.path.isfile(ff):
+				os.remove(ff)
+		self.upd_h(b)
+
+	def new_h(self,b):
+		f=self.path+"/"+self.mdName_w.value
+		os.makedirs(f)
+		self.upd_h(b)
+
 	# fomatter
-	def formatter_h(self,b):
+	def csv2pd_h(self,b):
 		if self.config["multiSelect"] and len(self.fList_w.value)!=1:
 			return
 		if self.config["multiSelect"]:
@@ -85,8 +107,20 @@ class fileBrowser_w(object):
 		else:
 			fValue=self.fList_w.value
 		fName=self.path + "/"+fValue
-		script=wlib.sampleFormatter(fName)
-		self.script_w.value=script
+		gen=wlib.csv2pd(fName,50)
+		self.script_w.value=gen.script()
+
+	# fomatter
+	def csv2pivot_h(self,b):
+		if self.config["multiSelect"] and len(self.fList_w.value)!=1:
+			return
+		if self.config["multiSelect"]:
+			fValue=self.fList_w.value[0]
+		else:
+			fValue=self.fList_w.value
+		fName=self.path + "/"+fValue
+		gen=wlib.csv2pivot(fName)
+		self.script_w.value=gen.script()
 
 	## HANDLER
 	## chooseボタンが押されたときにcallされる
@@ -104,6 +138,7 @@ class fileBrowser_w(object):
 		# print("fList_h",event)
 		# {'name': 'value', 'old': ('fileBrowser.py',), 'new': ('fileBrowser.ipynb', 'fileBrowser.py'), 'owner': SelectMultiple(index=(3, 4), options=('..', '__pycache__', '.ipynb_checkpoints', 'fileBrowser.ipynb', 'fileBrowser.py'), rows=14, value=('fileBrowser.ipynb', 'fileBrowser.py')), 'type': 'change'}
 		# ファイル名のセット
+
 		self.chosenFiles=[]
 		if self.config["multiSelect"]:
 			for file in event.owner.value:
@@ -130,6 +165,9 @@ class fileBrowser_w(object):
 			propText=wlib.sampleTXT(fName,50)
 		self.fileProperty.value=propText
 
+	def getFiles(self):
+		return self.chosenFiles
+
 	def propText(self):
 		return self.fileProperty.value
 
@@ -139,16 +177,33 @@ class fileBrowser_w(object):
 		#print(self.pwd_w.keys)
 
 		# ボタン系
+		but=[]
 		cd_w=widgets.Button( description='cd',layout=widgets.Layout(width='70px'))
 		cd_w.on_click(self.cd_h) # HANDLER
+		but.append(cd_w)
+
 		upd_w=widgets.Button( description='更新',layout=widgets.Layout(width='70px'))
 		upd_w.on_click(self.upd_h) # HANDLER
-		if self.config["actionHandler"] is None:
-			buttons=widgets.HBox([cd_w,upd_w])#,self.cancelButton])
-		else:
+		but.append(upd_w)
+
+		if self.config["actionHandler"] is not None:
 			action_w=widgets.Button( description=self.config["actionTitle"])
 			action_w.on_click(self.action_h) # HANDLER
-			buttons=widgets.HBox([cd_w,upd_w,action_w])#,self.cancelButton])
+			but.append(action_w)
+
+		if self.config["delHandler"] is not None:
+			del_w=widgets.Button( description='削除',layout=widgets.Layout(width='70px'))
+			del_w.on_click(self.del_h) # HANDLER
+			but.append(del_w)
+
+		if self.config["newHandler"] is not None:
+			md_w=widgets.Button( description='新規フォルダ')
+			md_w.on_click(self.new_h) # HANDLER
+			but.append(md_w)
+			self.mdName_w=widgets.Text(value="",layout=widgets.Layout(width='99%'))
+			but.append(self.mdName_w)
+
+		buttons=widgets.HBox(but)
 
 		# file list系
 		if self.config["multiSelect"]:
@@ -164,10 +219,12 @@ class fileBrowser_w(object):
 		else:
 			fListBox_w=widgets.HBox([self.fList_w])
 
-		formatter_w=widgets.Button( description='Formatter')
-		formatter_w.on_click(self.formatter_h) # HANDLER
+		csv2pd_w=widgets.Button( description='DataFrame')
+		csv2pd_w.on_click(self.csv2pd_h) # HANDLER
+		csv2pivot_w=widgets.Button( description='pivot')
+		csv2pivot_w.on_click(self.csv2pivot_h) # HANDLER
 		self.script_w=widgets.Textarea(rows=3,layout=widgets.Layout(width='99%'))
-		scriptBox_w=widgets.HBox([formatter_w,self.script_w])
+		scriptBox_w=widgets.HBox([widgets.VBox([csv2pd_w,csv2pivot_w]),self.script_w])
 
 		# 統合
 		self.fileBox=widgets.VBox([self.pwd_w,buttons,fListBox_w,scriptBox_w])

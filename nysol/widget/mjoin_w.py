@@ -18,27 +18,32 @@ import nysol.mcmd as nm
 
 ####################################################################
 class mjoin_w(object):
-	def __init__(self,iPath,mPath,oFile):
+	def __init__(self):
 		self.version="0.10"
 		self.date=datetime.now()
 
-		clear_output() # jupyter上の出力領域のクリア
-		self.iPath=os.path.abspath(os.path.expanduser(iPath))
-		self.mPath=os.path.abspath(os.path.expanduser(mPath))
-		self.oFile=os.path.abspath(os.path.expanduser(oFile))
-		self.oPath=os.path.dirname(self.oFile)
-		os.makedirs(self.oPath, exist_ok=True)
+		self.iFile=None
+		self.oPath=None
+		self.oFile=None
 
-	def exe_h(self,b):
+	def setParent(self,parent):
+		self.parent=parent
+
+	def exe(self,script_w,output_w):
 		iKey=self.iKey_w.getValue()
 		mKey=self.mKey_w.getValue()
 		field=self.field_w.getValue()
 		iOuter=self.iOuter_w.value
 		mOuter=self.mOuter_w.value
-		
+		oFile=self.oFile_w.value
+		if oFile=="":
+			self.parent.msg_w.value="##ERROR: 出力ファイルが入力されていません"
+			return False
+		oFile=self.oPath+"/"+oFile
+	
 		if field=="":
-			self.msg_w.value = "##ERROR: 「結合する項目」が選ばれていません。"
-			return
+			self.parent.msg_w.value = "##ERROR: 「結合する項目」が選ばれていません。"
+			return False
 
 		params=[]
 		params.append("k='%s'"%(iKey))
@@ -51,7 +56,7 @@ class mjoin_w(object):
 		if mOuter:
 			params.append("N=True")
 		params.append("i='%s'"%(self.iFile))
-		params.append("o='%s'"%(self.oFile))
+		params.append("o='%s'"%(oFile))
 
 		header="""
 #################################
@@ -77,82 +82,49 @@ oFile="%s"
 """%(self.oFile)
 
 		# script tabにセット
-		self.script_w.value = header+lib+script
+		script_w.value = header+lib+script
 
 		# outputscript tabにセット
-		self.output_w.value = output
+		output_w.value = output
 
-		# 出力path画面に移動
-		self.tab.selected_index = 3
+		return True
 
-	def iFile_h(self,files):
-		if len(files)==0:
-			return
+	def setiFile(self,iFiles,propText):
+		self.iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.propText=propText
+
 		# parameter設定tabに反映
-		self.iFile=files[0] # ファイル名表示
 		self.fName_w.value=self.iFile
-		self.fText_w.value=self.iFile_w.propText() # ファイル内容
+		self.fText_w.value=self.propText # ファイル内容
+		if self.iFile is None or not os.path.isfile(self.iFile):
+			self.parent.msg_w.value = "##ERROR: 入力ファイルが選ばれていません。"
+			return
 
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.fName_w.value)
+		fldNames=wlib.getCSVheader(self.iFile)
 		self.iKey_w.addOptions(copy.copy(fldNames))
 
-		# parameters画面に移動
-		self.tab.selected_index = 1
+	def setmFile(self,iFiles,propText):
+		self.mFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.propText=propText
 
-	def mFile_h(self,files):
-		if len(files)==0:
-			return
 		# parameter設定tabに反映
-		self.mFile=files[0] # ファイル名表示
 		self.mName_w.value=self.mFile
-		self.mText_w.value=self.mFile_w.propText() # ファイル内容
+		self.mText_w.value=self.propText # ファイル内容
+		if self.mFile is None or not os.path.isfile(self.mFile):
+			self.parent.msg_w.value = "##ERROR: 参照ファイルが選ばれていません。"
+			return
 
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.mName_w.value)
+		fldNames=wlib.getCSVheader(self.mFile)
 		self.mKey_w.addOptions(copy.copy(fldNames))
 		self.field_w.addOptions(copy.copy(fldNames))
 
-		# parameters画面に移動
-		self.tab.selected_index = 2
+	def setoPath(self,oPath):
+		self.oPath=os.path.abspath(os.path.expanduser(oPath))
+		self.oPath_w.value=self.oPath
 
 	def widget(self):
-		### iFileBox
-		if_config={
-			"multiSelect":False,
-			"property":True,
-			"propertyRows":20,
-			"actionHandler":self.iFile_h,
-			"actionTitle":"選択"
-	  }
-		self.iFile_w=fileBrowser_w(self.iPath,if_config)
-
-		### mFileBox
-		mf_config={
-			"multiSelect":False,
-			"property":True,
-			"propertyRows":20,
-			"actionHandler":self.mFile_h,
-			"actionTitle":"選択"
-	  }
-		self.mFile_w=fileBrowser_w(self.mPath,mf_config)
-
-		### oFileBox
-		of_config={
-			"multiSelect":False,
-			"property":True,
-			"propertyRows":100,
-			"actionHandler":None
-	   }
-		self.oPath_w=fileBrowser_w(self.oPath,of_config)
-
-		# ボタン系
-		exeButton_w=widgets.Button(description="スクリプト生成")
-		exeButton_w.style.button_color = 'lightgreen'
-		exeButton_w.on_click(self.exe_h)
-		buttons_w=widgets.HBox([exeButton_w])
-
-		# parameters
 		pbox=[]
 
 		# ファイル名とファイル内容
@@ -164,6 +136,10 @@ oFile="%s"
 		self.mText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
 		pbox.append(self.mName_w)
 		pbox.append(self.mText_w)
+		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=True)
+		pbox.append(self.oPath_w)
+		self.oFile_w =widgets.Text(description="ファイル名",value="",layout=Layout(width='100%'),disabled=False)
+		pbox.append(self.oFile_w)
 
 		# key 項目(入力)
 		config_k={
@@ -208,34 +184,6 @@ oFile="%s"
 		subbox2=widgets.HBox([self.iOuter_w,self.mOuter_w])
 		pbox.append(subbox2)
 
-		paramBox=widgets.VBox(pbox)
-
-		# スクリプト出力
-		self.script_w =widgets.Textarea(value="",rows=15,layout=Layout(width='100%'),disabled=False)
-
-		# 出力系スクリプト出力
-		self.output_w =widgets.Textarea(value="",rows=15,layout=Layout(width='100%'),disabled=False)
-
-		### tabコンテナ
-		children=[]
-		children.append(self.iFile_w.widget())
-		children.append(self.mFile_w.widget())
-		children.append(paramBox)
-		children.append(self.script_w)
-		children.append(self.output_w)
-		children.append(self.oPath_w.widget())
-		self.tab = widgets.Tab()
-		self.tab.children = children
-		self.tab.set_title(0, "入力ファイル選択")
-		self.tab.set_title(1, "参照ファイル選択")
-		self.tab.set_title(2, "結合")
-		self.tab.set_title(3, "基本スクリプト")
-		self.tab.set_title(4, "出力系スクリプト")
-		self.tab.set_title(5, "出力パスブラウザ")
-
-		# メッセージ窓
-		self.msg_w = widgets.Text(value="",layout=widgets.Layout(width='100%'),disabled=True)
-
-		box=widgets.VBox([buttons_w,self.msg_w,self.tab])
+		box=widgets.VBox(pbox)
 		return box
 
