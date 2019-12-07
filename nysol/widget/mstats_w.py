@@ -88,14 +88,6 @@ oFile="%s"
 		# 出力path画面に移動
 		self.tab.selected_index = 2
 
-	def getHeader(self,csv):
-		flds=None
-		with open(csv) as f:
-			line=f.readline()
-		if line:
-			flds=line.strip().split(",")
-		return flds
-
 	def iFile_h(self,files):
 		if len(files)==0:
 			return

@@ -13,6 +13,7 @@ from IPython.display import clear_output
 
 from nysol.widget.fileBrowser_w import fileBrowser_w
 from nysol.widget.selfield_w import selfield_w
+import nysol.widget.lib as wlib
 
 ####################################################################
 class mitemset_w(object):
@@ -138,14 +139,6 @@ tid_pats=ds.mkTable(tConfig,tid_patsCSV)
 		# 出力path画面に移動
 		self.tab.selected_index = 2
 
-	def getHeader(self,csv):
-		flds=None
-		with open(csv) as f:
-			line=f.readline()
-		if line:
-			flds=line.strip().split(",")
-		return flds
-
 	def iFile_h(self,files):
 		if len(files)==0:
 			return
@@ -155,7 +148,7 @@ tid_pats=ds.mkTable(tConfig,tid_patsCSV)
 		self.traFileTxt_w.value=self.iFile_w.propText() # ファイル内容
 
 		# フィールドリスト
-		fldNames=self.getHeader(self.traFile_w.value)
+		fldNames=wlib.getCSVheader(self.fName_w.value)
 		self.traID_w.addOptions(copy.copy(fldNames))
 		self.item_w.addOptions(copy.copy(fldNames))
 		self.class_w.addOptions(copy.copy(fldNames))
