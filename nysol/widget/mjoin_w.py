@@ -43,13 +43,13 @@ class mjoin_w(object):
 		params=[]
 		params.append("k='%s'"%(iKey))
 		if mKey!="":
-			params.append(",K='%s'"%(mKey))
+			params.append("K='%s'"%(mKey))
 		params.append("m='%s'"%(self.mFile))
 		params.append("f='%s'"%(field))
 		if iOuter:
-			params.append(",n=True")
+			params.append("n=True")
 		if mOuter:
-			params.append(",N=True")
+			params.append("N=True")
 		params.append("i='%s'"%(self.iFile))
 		params.append("o='%s'"%(self.oFile))
 
@@ -64,7 +64,7 @@ class mjoin_w(object):
 		lib="""
 import nysol.mcmd as nm
 nm.setMsgFlg(True)
-"""%(os.path.dirname(self.oFile))
+"""
 		script="""
 f=None
 f<<=nm.mjoin(%s)
