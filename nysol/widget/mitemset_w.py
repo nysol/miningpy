@@ -282,12 +282,14 @@ tid_pats=ds.mkTable(tConfig,tid_patsCSV)
 		children.append(paramBox)
 		children.append(self.script_w)
 		children.append(self.output_w)
+		children.append(self.oPath_w.widget())
 		self.tab = widgets.Tab()
 		self.tab.children = children
 		self.tab.set_title(0, "トランザクション")
 		self.tab.set_title(1, "アイテム集合列挙")
 		self.tab.set_title(2, "基本スクリプト")
 		self.tab.set_title(3, "出力系スクリプト")
+		self.tab.set_title(4, "出力パスブラウザ")
 
 		# メッセージ窓
 		self.msg_w = widgets.Text(value="",layout=widgets.Layout(width='100%'),disabled=True)
