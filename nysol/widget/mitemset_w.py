@@ -148,7 +148,7 @@ tid_pats=ds.mkTable(tConfig,tid_patsCSV)
 		self.traFileTxt_w.value=self.iFile_w.propText() # ファイル内容
 
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.fName_w.value)
+		fldNames=wlib.getCSVheader(self.traFile_w.value)
 		self.traID_w.addOptions(copy.copy(fldNames))
 		self.item_w.addOptions(copy.copy(fldNames))
 		self.class_w.addOptions(copy.copy(fldNames))
