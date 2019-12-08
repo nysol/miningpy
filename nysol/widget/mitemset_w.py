@@ -217,7 +217,7 @@ pattern
 		self.maxLen_w=widgets.IntSlider(description='maxLen', value=10, min=1, max=10, step=1)
 		pbox.append(widgets.HBox([self.minLen_w,self.maxLen_w]))
 
-		self.minGR_w=widgets.FloatSlider(description='minGR', value=1.0, min=1.0, max=100.0, step=1)
+		self.minGR_w=widgets.FloatSlider(description='minGR', value=1.0, min=1.0, max=20.0, step=0.2)
 		pbox.append(self.minGR_w)
 
 		self.top_w=widgets.IntSlider(description='top', value=1000, min=1, max=10000, step=1)
