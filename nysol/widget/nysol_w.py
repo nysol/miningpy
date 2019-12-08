@@ -171,7 +171,7 @@ func_w={name}()
 		self.tab.children = children
 		self.tab.set_title(0, "入力")
 		self.tab.set_title(1, "参照")
-		self.tab.set_title(2, "出力")
+		self.tab.set_title(2, "出力パス")
 		self.tab.set_title(3, "処理")
 		self.tab.set_title(4, "スクリプト")
 		self.tab.set_title(5, "出力系スクリプト")

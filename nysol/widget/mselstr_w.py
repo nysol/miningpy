@@ -100,7 +100,7 @@ f.run(msg='on')
 		output="""
 # ファイル出力された結果
 oFile="%s"
-"""%(self.oFile)
+"""%(oFile)
 
 		# script tabにセット
 		script_w.value = header+lib+script

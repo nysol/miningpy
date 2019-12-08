@@ -84,7 +84,7 @@ klass<<=nm.muniq(k='{key},{newName}')
 
 f=None
 f<<=nm.mjoin(k='{key}',m=klass,f='{newName}',n=True,i='{iFile}')
-f<<=nm.mselstr(k='{key}',f='{fld}',v='{val}',r={reverse_r},head={head},tail={tail},sub={sub})
+f<<=nm.mselstr(f='{fld}',v='{val}',r={reverse_r},head={head},tail={tail},sub={sub})
 f<<=nm.mnullto(f='{newName}',v='0',o='{oFile}')
 f.run()
 """.format(**params)

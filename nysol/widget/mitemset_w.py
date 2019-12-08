@@ -39,8 +39,12 @@ class mitemset_w(object):
 		maxSup=self.maxSup_w.value
 		minLen=self.minLen_w.value
 		maxLen=self.maxLen_w.value
-		minPpr=self.minPpr_w.value
+		minGR=self.minGR_w.value
 		top=self.top_w.value
+
+		if item==tid:
+			self.parent.msg_w.value="##ERROR: トランザクションIDとアイテム項目が同じ項目になってます"
+			return False
 
 		header="""
 #################################
@@ -68,7 +72,7 @@ minSup=%f # minimum support
 maxSup=%f # maximum support
 minLen=%d # minimum length of items
 maxLen=%d # maximum length of items
-minPpr=%f # minimum post-probability (klass指定時のみ有効)
+minGR=%f # minimum post-probability (klass指定時のみ有効)
 top=%d # 抽出上位件数(supportの大きい順)
 """%(
 		self.traFile,
@@ -81,7 +85,7 @@ top=%d # 抽出上位件数(supportの大きい順)
 		self.maxSup_w.value,
 		self.minLen_w.value,
 		self.maxLen_w.value,
-		self.minPpr_w.value,
+		self.minGR_w.value,
 		self.top_w.value
 )
 
@@ -96,7 +100,7 @@ nt.mitemset(i=traFile,
 				sx=maxSup,
 				l=minLen,
 				u=maxLen,
-				p=minPpr,
+				p=minGR,
 				top=top).run()
 """
 
@@ -213,8 +217,8 @@ pattern
 		self.maxLen_w=widgets.IntSlider(description='maxLen', value=10, min=1, max=10, step=1)
 		pbox.append(widgets.HBox([self.minLen_w,self.maxLen_w]))
 
-		self.minPpr_w=widgets.FloatSlider(description='minPpr', value=0.5, min=0.0, max=1.0, step=0.01)
-		pbox.append(self.minPpr_w)
+		self.minGR_w=widgets.FloatSlider(description='minGR', value=1.0, min=1.0, max=100.0, step=1)
+		pbox.append(self.minGR_w)
 
 		self.top_w=widgets.IntSlider(description='top', value=1000, min=1, max=10000, step=1)
 		pbox.append(self.top_w)
