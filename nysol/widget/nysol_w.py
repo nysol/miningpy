@@ -40,7 +40,8 @@ class nysol_w(object):
 	def upd_h(self,b):
 		self.setiFile2proc()
 		self.setmFile2proc()
-		self.setoFile2proc()
+		self.setiPath2proc()
+		self.setoPath2proc()
 
 	# Dropdownメニューが変化したら呼ばれる
 	def proc_h(self,event):
@@ -48,16 +49,19 @@ class nysol_w(object):
 		if val=="":
 			return
 		val=val.split("_w")[0]+"_w" # _w以降は無視する
+		name2=val.split(".")[-1]
 		paras={}
 		paras["name"] =val
+		paras["name2"] =name2
 		paras["oPath"]=self.path
 		scp="""
-from nysol.widget.{name} import {name}
-func_w={name}()
+from nysol.widget.{name} import {name2}
+func_w={name2}()
 """.format(**paras)
 
 		# scpを実行してローカル変数の内容をret辞書にセット
 		ret={}
+		#print(scp)
 		exec(scp,{},ret)
 		self.proc_w=ret["func_w"] # 処理オブジェクト
 		self.proc_w.setParent(self)
@@ -76,7 +80,8 @@ func_w={name}()
 
 		self.setiFile2proc()
 		self.setmFile2proc()
-		self.setoFile2proc()
+		self.setiPath2proc()
+		self.setoPath2proc()
 
 	# 処理オブジェクト(self.proc_w)に入力ファイルを伝える
 	def setiFile2proc(self):
@@ -92,8 +97,14 @@ func_w={name}()
 			mPropText= self.mFile_w.propText()
 			self.proc_w.setmFile(mFiles,mPropText) # 処理オブジェクトに参照ファイルを伝える
 
+	# 処理オブジェクト(self.proc_w)に入力pathを伝える
+	def setiPath2proc(self):
+		if hasattr(self.proc_w, 'setiPath'):
+			iPath=self.iFile_w.path
+			self.proc_w.setiPath(iPath)
+
 	# 処理オブジェクト(self.proc_w)に参照ファイルを伝える
-	def setoFile2proc(self):
+	def setoPath2proc(self):
 		if hasattr(self.proc_w, 'setoPath'):
 			oPath=self.oPath_w.path
 			self.proc_w.setoPath(oPath) # 処理オブジェクトに参照ファイルを伝える
@@ -109,7 +120,7 @@ func_w={name}()
 	def widget(self):
 		### iFileBox
 		if_config={
-			"multiSelect":False,
+			"multiSelect":True,
 			"property":True,
 			"propertyRows":20,
 			"actionHandler":None,
@@ -146,7 +157,8 @@ func_w={name}()
 		exeButton_w=widgets.Button(description="スクリプト生成")
 		exeButton_w.style.button_color = 'lightgreen'
 		exeButton_w.on_click(self.exe_h)
-		self.buttons_w=widgets.HBox([self.procSel_w,updButton_w,exeButton_w])
+		self.deepOutput_w=widgets.Checkbox(value=False, description='deep output',disabled=True)
+		self.buttons_w=widgets.HBox([self.procSel_w,updButton_w,exeButton_w,self.deepOutput_w])
 
 		self.blank_w =widgets.Label(value="no method selected")
 

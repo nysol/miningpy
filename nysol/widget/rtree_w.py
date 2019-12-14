@@ -10,7 +10,7 @@ from nysol.widget.selfield_w import selfield_w
 import nysol.widget.lib as wlib
 
 ####################################################################
-class ctree_w(object):
+class rtree_w(object):
 	def __init__(self):
 		self.version="0.10"
 		self.date=datetime.now()
@@ -49,7 +49,7 @@ class ctree_w(object):
 			self.parent.msg_w.value="##ERROR: 出力dirが入力されていません"
 			return False
 
-		script1=wlib.readSource("nysol.mining.ctree","ctree",deepOutput)
+		script1=wlib.readSource("nysol.mining.rtree","rtree",deepOutput)
 		print("script",script1)
 		script2=wlib.readSource("nysol.mining.csv2df")
 		script3="""
@@ -57,7 +57,7 @@ class ctree_w(object):
 os.makedirs("{oPath}"+"/"+"{oDir}",exist_ok=True)
 
 # pandasデータを作成する
-df,ds=csv2df("{iFile}", "{id_}", {nums}, ["{y}"], {cats})
+df,ds=csv2df("{iFile}", "{id_}", {nums}+["{y}"], [], {cats})
 
 xNames=ds.columns.to_list()
 xNames.remove("{y}")
@@ -67,7 +67,7 @@ x=ds.loc[:,xNames]
 config=dict()
 config["max_depth"]=10
 config["min_samples_leaf"]={minSamplesLeaf}
-model=ctree(x,y,config)
+model=rtree(x,y,config)
 
 model.build()
 print("cv_minFunc",model.cv_minFun)

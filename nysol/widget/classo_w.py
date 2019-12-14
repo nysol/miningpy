@@ -10,7 +10,7 @@ from nysol.widget.selfield_w import selfield_w
 import nysol.widget.lib as wlib
 
 ####################################################################
-class ctree_w(object):
+class classo_w(object):
 	def __init__(self):
 		self.version="0.10"
 		self.date=datetime.now()
@@ -49,10 +49,10 @@ class ctree_w(object):
 			self.parent.msg_w.value="##ERROR: 出力dirが入力されていません"
 			return False
 
-		script1=wlib.readSource("nysol.mining.ctree","ctree",deepOutput)
-		print("script",script1)
-		script2=wlib.readSource("nysol.mining.csv2df")
-		script3="""
+		script1=wlib.readSource("nysol.mining.cPredict","cPredict",deepOutput)
+		script2=wlib.readSource("nysol.mining.classo","classo",deepOutput,["nysol.mining.cPredict"])
+		script3=wlib.readSource("nysol.mining.csv2df")
+		script4="""
 # 出力ディレクトリを作成する
 os.makedirs("{oPath}"+"/"+"{oDir}",exist_ok=True)
 
@@ -67,12 +67,12 @@ x=ds.loc[:,xNames]
 config=dict()
 config["max_depth"]=10
 config["min_samples_leaf"]={minSamplesLeaf}
-model=ctree(x,y,config)
+model=classo(x,y)
 
 model.build()
-print("cv_minFunc",model.cv_minFun)
-print("cv_minX",model.cv_minX)
-print("score",model.score)
+#print("cv_minFunc",model.cv_minFun)
+#print("cv_minX",model.cv_minX)
+#print("score",model.score)
 model.visualize()
 model.save("{oPath}/{oDir}/model")
 
@@ -81,7 +81,7 @@ pred.evaluate(y)
 pred.save("{oPath}/{oDir}/pred")
 """.format(**params)
 
-		script_w.value = script1+script2+script3
+		script_w.value = script1+script2+script3+script4
 		return True
 
 	def setoPath(self,oPath):
@@ -160,7 +160,7 @@ pred.save("{oPath}/{oDir}/pred")
 		# y 項目
 		config_y={
 			"options":[],
-			"title":"出力変数",
+			"title":"出力変数(y)",
 			"rows":5,
 			"width":300,
 			"multiSelect":False,
@@ -174,9 +174,7 @@ pred.save("{oPath}/{oDir}/pred")
 		self.minSamplesLeaf_w=widgets.FloatSlider(description='枝刈度', value=0.0, min=0.0, max=0.5, step=0.01, disabled=False, orientation='horizontal')
 		label=widgets.Textarea(rows=3,disabled=True,layout=widgets.Layout(width="65%"),
     value=
-"""枝刈度にはリーフの最小サンプル数(min_samples_leaf)を利用する。
-値は、全サンプル数に対する割合で指定する(min_samples_leaf=(0.0,0.5])。
-0.0に設定すると、cross-validationでテスト誤差最小の枝刈度を自動選択する。
+"""クラス数は
 """)
 		pbox.append(widgets.VBox([label, self.minSamplesLeaf_w]))
 

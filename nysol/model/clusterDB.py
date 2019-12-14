@@ -46,7 +46,7 @@ class Cluster(object):
 			print("comment:")
 			print(self.comment)
 			for smp in self.sampleDB.sampleList:
-				print(smp.title())
+				print(smp.title(60))
 
 ####################################################################
 class ClusterDB(object):
@@ -82,7 +82,7 @@ if __name__=="__main__":
 	from sampleDB import SampleDB
 	from clusterDB import ClusterDB,Cluster
 	sys.path.append("../apps/yahooNews/lib")
-	from sample import Sample
+	from nysol.widget.yahooNews.lib.sample import Sample
 
 	iFile="../libtest/DATA/icds.json"
 
@@ -91,10 +91,12 @@ if __name__=="__main__":
 		coms=json.load(f)
 
 	for com in coms:
+		#print(com)
+		print(com.keys())
 		sample=Sample(0)
 		sample.fromJSON(com)
 		sampleDB.add(sample)
-
+	exit()
 	vecs=[]
 	for sample in sampleDB:
 		vecs.append(sample.vector)
@@ -102,7 +104,9 @@ if __name__=="__main__":
 
 	model=KMeans(n_clusters=8)
 	pred=model.fit_predict(vecs)
+	print("####### pred")
 	print(pred)
+	print("####### unique(pred)")
 	print(np.unique(pred))
 	clusterDB=ClusterDB()
 	for clusterNo in sorted(np.unique(pred)):
@@ -112,6 +116,7 @@ if __name__=="__main__":
 		cluster=clusterDB.clusterList[clusterNo]
 		cluster.sampleDB.add(sampleDB.sampleList[sampleNo])
 	#clusterDB.show()
+	print("####### clusterDB")
 	for c in clusterDB:
 		c.show()
 

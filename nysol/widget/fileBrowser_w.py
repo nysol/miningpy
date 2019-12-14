@@ -33,6 +33,7 @@ class fileBrowser_w(object):
 			self.config["message"]=None
 		self.message=self.config["message"]
 
+		self.position=0
 		#self.path = os.getcwd()
 		#self.setFileList()
 
@@ -53,6 +54,15 @@ class fileBrowser_w(object):
 					self.files.append(f)
 		self.fList_w.options=sorted(self.dirs)+sorted(self.files)
 
+		if len(self.fList_w.options) <= self.position:
+			self.position=len(self.fList_w.options)-1
+		if self.config["multiSelect"]:
+			self.fList_w.value=[self.fList_w.options[self.position]]
+		else:
+			self.fList_w.value=self.fList_w.options[self.position]
+
+		self.updChosenProp([],[])
+
 	# HANDLER
 	# ディレクトリの変更
 	def cd_h(self,b):
@@ -72,8 +82,9 @@ class fileBrowser_w(object):
 		if not os.path.isdir(path):
 			return
 
+		self.position=0
 		self.path=path
-		self.fList_w.options=self.dirs+self.files
+		#self.fList_w.options=self.dirs+self.files
 		self.pwd_w.value=self.path
 		self.setFileList()
 
@@ -98,27 +109,41 @@ class fileBrowser_w(object):
 		os.makedirs(f)
 		self.upd_h(b)
 
-	# fomatter
-	def csv2pd_h(self,b):
+	def getFileName(self,oPath):
+		fValue=None
 		if self.config["multiSelect"] and len(self.fList_w.value)!=1:
-			return
+			fValue=None
 		if self.config["multiSelect"]:
 			fValue=self.fList_w.value[0]
 		else:
 			fValue=self.fList_w.value
-		fName=self.path + "/"+fValue
+		if fValue is None:
+			return fValue
+		else:
+			return oPath+"/"+fValue
+
+	# fomatter
+	def png_h(self,b):
+		fName=self.getFileName(self.path)
+		if fName is None:
+			return
+		self.script_w.value="""from IPython.display import Image, display_png
+display_png(Image("%s")) # confusion_matrix
+"""%(fName)
+
+	# fomatter
+	def csv2pd_h(self,b):
+		fName=self.getFileName(self.path)
+		if fName is None:
+			return
 		gen=wlib.csv2pd(fName,50)
 		self.script_w.value=gen.script()
 
 	# fomatter
 	def csv2pivot_h(self,b):
-		if self.config["multiSelect"] and len(self.fList_w.value)!=1:
+		fName=self.getFileName(self.path)
+		if fName is None:
 			return
-		if self.config["multiSelect"]:
-			fValue=self.fList_w.value[0]
-		else:
-			fValue=self.fList_w.value
-		fName=self.path + "/"+fValue
 		gen=wlib.csv2pivot(fName)
 		self.script_w.value=gen.script()
 
@@ -130,6 +155,37 @@ class fileBrowser_w(object):
 		#if not self.message is None:
 		#	self.message("action_h",self)
 
+	def updChosenProp(self,values,index):
+		self.chosenFiles=[]
+
+		if len(values)<1: # current pathを選択したファアイルとする
+			self.chosenFiles.append(self.pwd_w.value)
+			self.position=0
+		else:
+			for fName in values:
+				self.chosenFiles.append(self.pwd_w.value+"/"+fName)
+			self.position=index
+
+		# propertyへの内容表示
+		if not self.config["property"]:
+			return
+
+		# 複数選択時はpropertyは表示しない
+		if len(values)>1:
+			return
+
+		# file attributeの表示
+		fName=self.chosenFiles[0]
+		self.fileAttr_w.value=wlib.getFileAttribute(fName)
+
+		propText=""
+		#if self.config["multiSelect"]:
+		#	fName=self.pwd_w.value+"/"+event["new"][0]
+		#else:
+		if os.path.isfile(fName):
+			propText=wlib.sampleTXT(fName,50)
+		self.fileProperty.value=propText
+
 	## HANDLER
 	## fList_wの値が変わった時にcallされる
 	#  * 選択されたファイル名をlistに格納
@@ -138,32 +194,17 @@ class fileBrowser_w(object):
 		# print("fList_h",event)
 		# {'name': 'value', 'old': ('fileBrowser.py',), 'new': ('fileBrowser.ipynb', 'fileBrowser.py'), 'owner': SelectMultiple(index=(3, 4), options=('..', '__pycache__', '.ipynb_checkpoints', 'fileBrowser.ipynb', 'fileBrowser.py'), rows=14, value=('fileBrowser.ipynb', 'fileBrowser.py')), 'type': 'change'}
 		# ファイル名のセット
-
-		self.chosenFiles=[]
-		if self.config["multiSelect"]:
-			for file in event.owner.value:
-				self.chosenFiles.append(self.pwd_w.value+"/"+file)
-		else:
-			self.chosenFiles.append(self.pwd_w.value+"/"+event.owner.value)
-
-		# propertyへの内容表示
-		if not self.config["property"]:
+		if len(event.owner.value)<1:
 			return
-
-		# multiSelectで表示するのは、ひとつのファイルを選んだ時のみ
-		if self.config["multiSelect"] and len(event["new"])!=1:
-			return
-
-
-		propText=""
 		if self.config["multiSelect"]:
-			fName=self.pwd_w.value+"/"+event["new"][0]
+			values=event.owner.value
+			index=event.owner.index[0]
 		else:
-			fName=self.chosenFiles[0]
-		self.fileAttr_w.value=wlib.getFileAttribute(fName)
-		if os.path.isfile(fName):
-			propText=wlib.sampleTXT(fName,50)
-		self.fileProperty.value=propText
+			values=[event.owner.value]
+			index=event.owner.index
+
+		self.updChosenProp(values,index)
+
 
 	def getFiles(self):
 		return self.chosenFiles
@@ -219,14 +260,17 @@ class fileBrowser_w(object):
 		else:
 			fListBox_w=widgets.HBox([self.fList_w])
 
-		csv2pd_w=widgets.Button( description='DataFrame')
+		png_w=widgets.Button( description='png')
+		png_w.on_click(self.png_h) # HANDLER
+		csv2pd_w=widgets.Button(description='DataFrame')
 		csv2pd_w.on_click(self.csv2pd_h) # HANDLER
 		csv2pivot_w=widgets.Button( description='pivot')
 		csv2pivot_w.on_click(self.csv2pivot_h) # HANDLER
 		self.script_w=widgets.Textarea(rows=3,layout=widgets.Layout(width='99%'))
-		scriptBox_w=widgets.HBox([widgets.VBox([csv2pd_w,csv2pivot_w]),self.script_w])
+		scriptBox_w=widgets.HBox([widgets.VBox([png_w,csv2pd_w,csv2pivot_w]),self.script_w])
 
 		# 統合
 		self.fileBox=widgets.VBox([self.pwd_w,buttons,fListBox_w,scriptBox_w])
 		self.setFileList()
 		return self.fileBox
+

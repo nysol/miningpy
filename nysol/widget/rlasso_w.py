@@ -10,7 +10,7 @@ from nysol.widget.selfield_w import selfield_w
 import nysol.widget.lib as wlib
 
 ####################################################################
-class ctree_w(object):
+class rlasso_w(object):
 	def __init__(self):
 		self.version="0.10"
 		self.date=datetime.now()
@@ -49,15 +49,15 @@ class ctree_w(object):
 			self.parent.msg_w.value="##ERROR: 出力dirが入力されていません"
 			return False
 
-		script1=wlib.readSource("nysol.mining.ctree","ctree",deepOutput)
-		print("script",script1)
-		script2=wlib.readSource("nysol.mining.csv2df")
-		script3="""
+		script1=wlib.readSource("nysol.mining.rPredict","rPredict",deepOutput)
+		script2=wlib.readSource("nysol.mining.rlasso","rlasso",deepOutput,["nysol.mining.rPredict"])
+		script3=wlib.readSource("nysol.mining.csv2df")
+		script4="""
 # 出力ディレクトリを作成する
 os.makedirs("{oPath}"+"/"+"{oDir}",exist_ok=True)
 
 # pandasデータを作成する
-df,ds=csv2df("{iFile}", "{id_}", {nums}, ["{y}"], {cats})
+df,ds=csv2df("{iFile}", "{id_}", {nums}+["{y}"], [], {cats})
 
 xNames=ds.columns.to_list()
 xNames.remove("{y}")
@@ -67,12 +67,12 @@ x=ds.loc[:,xNames]
 config=dict()
 config["max_depth"]=10
 config["min_samples_leaf"]={minSamplesLeaf}
-model=ctree(x,y,config)
+model=rlasso(x,y)
 
 model.build()
-print("cv_minFunc",model.cv_minFun)
-print("cv_minX",model.cv_minX)
-print("score",model.score)
+#print("cv_minFunc",model.cv_minFun)
+#print("cv_minX",model.cv_minX)
+#print("score",model.score)
 model.visualize()
 model.save("{oPath}/{oDir}/model")
 
@@ -81,7 +81,7 @@ pred.evaluate(y)
 pred.save("{oPath}/{oDir}/pred")
 """.format(**params)
 
-		script_w.value = script1+script2+script3
+		script_w.value = script1+script2+script3+script4
 		return True
 
 	def setoPath(self,oPath):
@@ -160,7 +160,7 @@ pred.save("{oPath}/{oDir}/pred")
 		# y 項目
 		config_y={
 			"options":[],
-			"title":"出力変数",
+			"title":"出力変数(y)",
 			"rows":5,
 			"width":300,
 			"multiSelect":False,

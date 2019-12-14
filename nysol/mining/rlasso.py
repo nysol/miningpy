@@ -5,24 +5,19 @@ import sys
 import numpy as np
 import pickle
 import json
+import csv
 
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LassoCV,RidgeCV,Lasso,Ridge
 
-from sklearn import tree
-#from sklearn.model_selection import KFold
-#from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import StratifiedKFold
-from nysol.mining.model import RegressionPredicted
-
+from nysol.mining.rPredict import rPredict
 
 class rlasso(object):
 	def __init__(self,x_df,y_df):
 		if len(y_df.columns)!=1:
 			raise BaseException("##ERROR: DataFrame of y variable must be one column data")
-		self.config=config
+		#self.config=config
 
 		self.yName=y_df.columns[0]
 		self.y=y_df.values.reshape((-1,))
@@ -50,8 +45,8 @@ class rlasso(object):
 		
 		self.model.fit(x_trans, self.y)
 		self.score=self.model.score(x_trans, self.y)
-		print("coef",self.model.coef_)
-		print("intercept",self.model.intercept_)
+		#print("coef",self.model.coef_)
+		#print("intercept",self.model.intercept_)
 		#print(self.model.predict(x_trans))
 		#print(self.y)
 		#exit()
@@ -60,7 +55,7 @@ class rlasso(object):
 		self.coef.append(["x","coef"])
 		self.coef.append(["intercept",float(self.model.intercept_)])
 		for i in range(len(self.model.coef_)):
-			self.coef.append([model.xNames[i],float(self.model.coef_[i])])
+			self.coef.append([self.xNames[i],float(self.model.coef_[i])])
 
 		# 最適λ
 		self.opt_lambda=[]
@@ -68,7 +63,7 @@ class rlasso(object):
 		self.opt_lambda.append([float(self.model.alpha_)])
 
 	def predict(self,x_df):
-		pred=RegressionPredicted()
+		pred=rPredict()
 		x=x_df.values.reshape((-1,len(x_df.columns)))
 		x_trans=self.scaler.transform(x)
 
@@ -87,9 +82,14 @@ class rlasso(object):
 		with open(oFile, 'wb') as fpw:
 			pickle.dump(self, fpw)
 
+		#print(self.coef)
 		json_dump = json.dumps(self.coef, ensure_ascii=False, indent=2)
 		with open("%s/coef.json"%(oPath),"bw") as f:
 			f.write(json_dump.encode("utf-8"))
+		with open("%s/coef.csv"%(oPath),"w") as f:
+			writer = csv.writer(f)
+			for row in self.coef:
+				writer.writerow(row)
 
 		json_dump = json.dumps(self.opt_lambda, ensure_ascii=False, indent=2)
 		with open("%s/opt_lambda.json"%(oPath),"bw") as f:
@@ -147,7 +147,7 @@ if __name__ == '__main__':
 
 	config={}
 	config["type"]="table"
-	["Sex","Length","Diameter","Height","Whole","Shucked","Viscera","Shell","Rings","id"]
+	#["Sex","Length","Diameter","Height","Whole","Shucked","Viscera","Shell","Rings","id"]
 
 	config["names"]=["Sex","Length","Diameter","Height","Whole","Shucked","Viscera","Shell","Rings","id"]
 	config["convs"]=["dummy()","numeric()","numeric()","numeric()","numeric()","numeric()","numeric()","numeric()","numeric()","numeric()"]

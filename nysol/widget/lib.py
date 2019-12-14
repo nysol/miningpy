@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime
 import os
 import re
+import importlib
 
 def csv2pd3(csvFile,top):
 	"""import pandas as pd
@@ -110,8 +111,38 @@ def getCSVheader(csvFile):
 	return flds
 """
 
+# lib: "nysol.mining.ctree"
+def readSource(lib,func=None,deepOutput=True,skip=None):
+	script=""
+	if deepOutput:
+		mod = importlib.import_module(lib)
+		with open(mod.__file__) as f:
+			while True:
+				line = f.readline()
+				if not line:
+					break
+				if skip is not None:
+					match=False
+					for word in skip:
+						if word in line:
+							match=True
+							break
+					if match:
+						continue
+				if re.search(r"if *__name__ *== *[\"']__main__[\"']:.*",line) is not None:
+					break
+				script+=line
+
+		#script=re.sub("if *__name__ *== *[\"']__main__[\"']:.*","",script,flags=(re.MULTILINE | re.DOTALL))
+	else:
+		script="from %s import %s\n"%(lib,func)
+	return script
+
 if __name__=='__main__':
+
 	obj=csv2pd("./xxa",top=10)
 	print(obj.script())
 	obj.run()
 
+	source=readSource("nysol.mining.ctree")
+	print(source)

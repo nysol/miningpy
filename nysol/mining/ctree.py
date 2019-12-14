@@ -20,7 +20,7 @@ import pydotplus
 from sklearn.externals.six import StringIO
 
 from skopt import gp_minimize
-from nysol.mining.model import ClassificationPredicted
+from nysol.mining.cPredict import cPredict
 
 class ctree(object):
 	def __init__(self,x_df,y_df,config):
@@ -28,6 +28,8 @@ class ctree(object):
 			raise BaseException("##ERROR: DataFrame of y variable must be one column data")
 
 		self.config=config
+		if "min_samples_leaf" not in config:
+			config["min_samples_leaf"]=0.0
 
 		self.yName=y_df.columns[0]
 		classDist=y_df[self.yName].value_counts().to_dict()
@@ -57,10 +59,10 @@ class ctree(object):
 		clf=tree.DecisionTreeClassifier(**params)
 
 		#skFold=KFold(n_splits=10,random_state=11)
-		skFold=StratifiedKFold(n_splits=10,random_state=11)
+		#skFold=StratifiedKFold(n_splits=10,random_state=11)
 
 		#print(cross_val_score(clf, self.x, self.y, cv=skFold, scoring='neg_mean_squared_error'))
-		score=np.mean(cross_val_score(clf, self.x, self.y01, cv=skFold, scoring='neg_mean_squared_error'))*(-1)
+		score=np.mean(cross_val_score(clf, self.x, self.y01, cv=self.skFold, scoring='neg_mean_squared_error'))*(-1)
 		print("space",spaces[0],score)
 		return score
 
@@ -84,8 +86,9 @@ class ctree(object):
 				print("opt","%f,%f"%(grid_search.best_params_['min_samples_leaf'],grid_search.best_score_))
 			else:
 				# ベイズ最適化による最適min_samples_leafの探索(CVによる推定)
+				self.skFold=StratifiedKFold(n_splits=10,random_state=11)
 				spaces = [(0.0001,0.5, 'uniform')] # min_samples_leafの最大は0.5
-				res = gp_minimize(self.objectiveFunction, spaces, n_calls=15, random_state=11)
+				res = gp_minimize(self.objectiveFunction, spaces, n_calls=20, random_state=11)
 				self.cv_minFun=res.fun # 最小の目的関数値
 				self.cv_minX=res.x[0] # 最適パラメータ(枝刈り度)
 				#print(res) # 目的関数値
@@ -105,7 +108,7 @@ class ctree(object):
 		#print("m accuracy",self.score)
 
 	def predict(self,x_df):
-		pred=ClassificationPredicted()
+		pred=cPredict()
 		x=x_df.values.reshape((-1,len(x_df.columns)))
 
 		# 以下の各処理では、例外なく0.0/1.0のクラス値は元のクラス名に戻してやる
@@ -180,16 +183,16 @@ class ctree(object):
 		self.tree_text=tree.export_text(self.model,feature_names=self.xNames,show_weights=True)
 
 if __name__ == '__main__':
-	import dataset as ds
+	import pandas as pd
+	from nysol.mining.csv2df import csv2df
+	iFile="/Users/hamuro/nysol/miningpy/nysol/mining/data/crx2.csv"
+	df,ds=csv2df(iFile,"id",["n1","n2","n3","n4"],["class"],["d1","d2","d3","i1","i2"])
 
-	configFile="./config/crx2.dsc"
-	crx=ds.mkTable(configFile,"./data/crx2.csv")
-	#ds.show(crx)
-
-	crx=crx.dropna()
-	crx_y=ds.cut(crx,["class"])
-	crx_x=ds.cut(crx,["class"],reverse=True)
-
+	yName="class"
+	xNames=ds.columns.to_list()
+	xNames.remove(yName)
+	crx_y=pd.DataFrame(ds.loc[:,yName])
+	crx_x=ds.loc[:,xNames]
 	config={"max_depth": 10}
 	model=ctree(crx_x,crx_y,config)
 	model.build()
@@ -204,7 +207,7 @@ if __name__ == '__main__':
 	pred.save("xxctree_pred_crx")
 	#print(pred.y_pred)
 	#print(pred.y_prob)
-
+	exit()
 	model=None
 	model=ctree.load("xxctree_model_crx/model.sav")
 	pred=model.predict(crx_x)
@@ -238,7 +241,7 @@ if __name__ == '__main__':
 	model.visualize()
 	model.save("xxctree_model_iris")
 
-	pred=model.predict(iris_x) # ClassificationPredicted class
+	pred=model.predict(iris_x)
 	#print(pred.y_prob[0],pred.y_pred[0])
 	pred.evaluate(iris_y)
 	pred.save("xxctree_pred_iris")

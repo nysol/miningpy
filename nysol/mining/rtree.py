@@ -11,14 +11,12 @@ import json
 import re
 
 from sklearn import tree
-#from sklearn.model_selection import KFold
-#from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
 import pydotplus
 from sklearn.externals.six import StringIO
 from skopt import gp_minimize
-from nysol.mining.model import RegressionPredicted
+from nysol.mining.rPredict import rPredict
 
 class rtree(object):
 	def __init__(self,x_df,y_df,config):
@@ -56,8 +54,8 @@ class rtree(object):
 		if len(self.y)>=10 and not "min_samples_leaf" in params:
 			#parameters = {'min_impurity_decrease':list(np.arange(0.0,0.1,0.01))}
 			# ベイズ最適化による最適min_impurity_decreaseの探索(CVによる推定)
-			spaces = [(0.001,0.3, 'uniform')]
-			res = gp_minimize(self.objectiveFunction, spaces, n_calls=15, random_state=11)
+			spaces = [(0.0001,0.5, 'uniform')]
+			res = gp_minimize(self.objectiveFunction, spaces, n_calls=20, random_state=11)
 			self.cv_minFun=res.fun # 最小の目的関数値
 			self.cv_minX=res.x[0] # 最適パラメータ(枝刈り度)
 			#print(res) # 目的関数値
@@ -72,7 +70,7 @@ class rtree(object):
 		self.score=self.model.score(self.x, self.y)
 
 	def predict(self,x_df):
-		pred=RegressionPredicted()
+		pred=rPredict()
 		x=x_df.values.reshape((-1,len(x_df.columns)))
 
 		pred.y_pred=self.model.predict(x)
@@ -94,8 +92,7 @@ class rtree(object):
 			f.write(self.tree_text.encode("utf-8"))
 
 		if self.tree_chart:
-			#self.tree_chart.write_png("%s/tree.png"%(oPath))
-			self.tree_chart.write_pdf("%s/tree.pdf"%(oPath))
+			self.tree_chart.write_png("%s/tree.png"%(oPath))
 
 	def visualize(self):
 		classes=None

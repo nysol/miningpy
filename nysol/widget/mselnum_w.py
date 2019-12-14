@@ -95,13 +95,13 @@ oFile="%s"
 	def setiFile(self,iFiles,propText):
 		self.iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
 		self.propText=propText
+		if self.iFile is None or not os.path.isfile(self.iFile):
+			self.parent.msg_w.value = "##ERROR: 入力ファイルが選ばれていません。"
+			return
 
 		# parameter設定tabに反映
 		self.iName_w.value=self.iFile
 		self.iText_w.value=self.propText # ファイル内容
-		if self.iFile is None or not os.path.isfile(self.iFile):
-			self.parent.msg_w.value = "##ERROR: 入力ファイルが選ばれていません。"
-			return
 
 		# フィールドリスト
 		fldNames=wlib.getCSVheader(self.iFile)
@@ -134,11 +134,11 @@ oFile="%s"
 
 		pbox=[]
 		# ファイル名とファイル内容
-		self.iName_w =widgets.Text(description="入力ファイル",value="",layout=Layout(width='100%'),disabled=True)
+		self.iName_w =widgets.Text(description="入力ファイル",value="",layout=Layout(width='100%'),disabled=False)
 		self.iText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
 		pbox.append(self.iName_w)
 		pbox.append(self.iText_w)
-		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=True)
+		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oPath_w)
 		self.oFile_w =widgets.Text(description="ファイル名",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oFile_w)

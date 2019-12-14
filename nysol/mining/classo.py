@@ -5,6 +5,7 @@ import sys
 import numpy as np
 import pickle
 import json
+import csv
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LassoCV,Lasso
@@ -19,19 +20,7 @@ import scipy
 #from sklearn.metrics import recall_score
 import sklearn.metrics as metrics
 
-from sklearn import tree
-#from sklearn.model_selection import KFold
-#from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import StratifiedKFold
-
-import warnings
-warnings.filterwarnings('ignore')
-from skopt import gp_minimize
-#from model import ClassificationModel
-from nysol.mining.model import ClassificationPredicted
-
-import model
+from nysol.mining.cPredict import cPredict
 
 class classo(object):
 	def __init__(self,x_df,y_df):
@@ -86,7 +75,7 @@ class classo(object):
 			self.opt_lambda.append([str(self.labels[c]),float(self.model.C_[c])])
 
 	def predict(self,x_df):
-		pred=ClassificationPredicted()
+		pred=cPredict()
 		x=x_df.values.reshape((-1,len(x_df.columns)))
 		x_trans=self.scaler.transform(x)
 
@@ -121,6 +110,10 @@ class classo(object):
 		json_dump = json.dumps(self.coef, ensure_ascii=False, indent=2)
 		with open("%s/coef.json"%(oPath),"bw") as f:
 			f.write(json_dump.encode("utf-8"))
+		with open("%s/coef.csv"%(oPath),"w") as f:
+			writer = csv.writer(f)
+			for row in self.coef:
+				writer.writerow(row)
 
 		json_dump = json.dumps(self.opt_lambda, ensure_ascii=False, indent=2)
 		with open("%s/opt_lambda.json"%(oPath),"bw") as f:
@@ -240,7 +233,7 @@ if __name__ == '__main__':
 	model.visualize()
 	model.save("xxclasso_model_iris")
 
-	pred=model.predict(iris_x) # ClassificationPredicted class
+	pred=model.predict(iris_x) 
 	#print(pred.y_prob[0],pred.y_pred[0])
 	pred.evaluate(iris_y)
 	pred.save("xxclasso_pred_iris")

@@ -56,22 +56,20 @@ class cluster_w(object):
 	
 ####################################################################
 class clusterDB_w(object):
-	def __init__(self,config={}):
-		self.clusterList=[]
-		self.config = config
-		# config default設定
-		if "db" not in self.config:
-			self.config["db"]=None  # clusterDB
-		if "message" not in self.config:
-			self.config["message"]=None
+	def __init__(self):
+		self.version="0.10"
+		self.date=datetime.now()
 
+		'''
 		self.db=self.config["db"]
-		print("xxxxdb",self.db.__class__.__name__)
-		self.message=self.config["message"]
 		if not self.db is None:
 			for data in self.db:
 				self.clusterList.append(cluster_w(data,self))
 				print("xxxxd",data.__class__.__name__)
+				'''
+
+	def setParent(self,parent):
+		self.parent=parent
 
 	def refresh(self):
 		print("self.clusterList",self.clusterList)
