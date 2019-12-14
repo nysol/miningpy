@@ -88,7 +88,6 @@ pred.save("{oPath}/{oDir}/pred")
 		self.oPath=os.path.abspath(os.path.expanduser(oPath))
 		self.oPath_w.value=self.oPath
 
-
 	def setiFile(self,iFiles,propText):
 		self.iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
 		self.propText=propText

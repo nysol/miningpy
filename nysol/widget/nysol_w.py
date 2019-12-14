@@ -150,11 +150,11 @@ func_w={name2}()
 		self.oPath_w=fileBrowser_w(self.path,of_config)
 
 		# ボタン系
-		self.procSel_w=widgets.Dropdown(description="処理",options=self.tools,layout=Layout(width='60%'))
+		self.procSel_w=widgets.Dropdown(description="処理",options=self.tools,layout=Layout(width='50%'))
 		self.procSel_w.observe(self.proc_h,names="value") # HANDLER
-		updButton_w=widgets.Button(description="更新",layout=Layout(width='50px'))
+		updButton_w=widgets.Button(description="更新",layout=Layout(width='70px'))
 		updButton_w.on_click(self.upd_h)
-		exeButton_w=widgets.Button(description="スクリプト生成")
+		exeButton_w=widgets.Button(description="スクリプト生成",layout=Layout(width='160px'))
 		exeButton_w.style.button_color = 'lightgreen'
 		exeButton_w.on_click(self.exe_h)
 		self.deepOutput_w=widgets.Checkbox(value=False, description='deep output',disabled=True)
