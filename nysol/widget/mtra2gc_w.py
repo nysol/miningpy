@@ -37,9 +37,13 @@ class mtra2gc_w(object):
 		if params["sim"]=="minConf":
 			params["th"]  = self.minConf_w.value
 			params["simName"]  = "C"
+			params["simFld"]  = "confidence"
+			params["undirect"]  = False
 		else:
 			params["th"]  = self.minPMI_w.value
 			params["simName"]  = "P"
+			params["simFld"]  = "PMI"
+			params["undirect"]  = True
 
 		if params["oDir"]=="":
 			self.parent.msg_w.value="##ERROR: 出力dirが入力されていません"
@@ -77,8 +81,9 @@ nnpie.mnetpie(ei=op+"/edge.csv",
 				nf="node",
 				o=op+"/graph.html",
 				nodeSizeFld="support",
-				edgeWidthFld="{simFld}"
-				).run()
+				edgeWidthFld="{simFld}",
+				undirect={undirect}
+				)
 
 """.format(**params)
 

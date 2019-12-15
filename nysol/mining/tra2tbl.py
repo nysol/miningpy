@@ -15,13 +15,13 @@ import nysol.mcmd as nm
 
 def tra2tbl(iFile,oFile,tidFld,itemFld,null=0,dummy=True,aggFld=None,aggStat=None,klassFld=None):
 	klass=None
-	if klassFld is not None:
+	if klassFld is not None and klassFld!="":
 		klass<<=nm.mcut(f=tidFld+","+klassFld,i=iFile)
 		klass<<=nm.muniq(k=tidFld)
 
 	f=None
 	# aggFldが指定されていればセル項目を集計
-	if aggFld is not None:
+	if aggFld is not None and aggFld!="":
 		f<<=nm.mcut(f=tidFld+","+itemFld+","+aggFld, i=iFile)
 		f<<=nm.mstats(k=tidFld,f="%s:_cell"%(aggFld), c=aggStat)
 
@@ -42,7 +42,7 @@ def tra2tbl(iFile,oFile,tidFld,itemFld,null=0,dummy=True,aggFld=None,aggStat=Non
 	f<<=nm.m2cross(k=tidFld,s=itemFld,f="_cell")
 
 	# クラス項目が指定されていれば結合する
-	if klassFld is not None:
+	if klassFld is not None and klassFld!="":
 		f<<=nm.mjoin(k=tidFld,m=klass,f=klassFld)
 
 	# null値を一斉に置換する
