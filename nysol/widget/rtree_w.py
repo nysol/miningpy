@@ -49,6 +49,10 @@ class rtree_w(object):
 			self.parent.msg_w.value="##ERROR: 出力dirが入力されていません"
 			return False
 
+		if params["y"] in params["nums"] or params["y"] in params["cats"]:
+			self.parent.msg_w.value="##ERROR: 入力変数に出力変数が含まれています:%s"%params["y"]
+			return False
+
 		script1=wlib.readSource("nysol.mining.rtree","rtree",deepOutput)
 		print("script",script1)
 		script2=wlib.readSource("nysol.mining.csv2df")

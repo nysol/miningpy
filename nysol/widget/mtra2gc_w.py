@@ -75,17 +75,20 @@ nt.mtra2gc(i="{traFile}",
 				node_support={nodeSup}
 				).run()
 
+nm.mnormalize(f="support:_nv",c="range",i=op+"/node.csv").mcal(c="${{_nv}}*200",a="_nodeSize",o=op+"/node2.csv").run()
+
 nnpie.mnetpie(ei=op+"/edge.csv",
-				ni=op+"/node.csv",
+				ni=op+"/node2.csv",
 				ef="node1,node2",
 				nf="node",
 				o=op+"/graph.html",
-				nodeSizeFld="support",
-				edgeWidthFld="{simFld}",
+				nodeSizeFld="_nodeSize",
 				undirect={undirect}
 				)
 
 """.format(**params)
+
+		#edgeWidthFld="{simFld}",
 
 		script_w.value = script
 		return True
@@ -156,7 +159,7 @@ nnpie.mnetpie(ei=op+"/edge.csv",
 		self.minPMI_w=widgets.FloatSlider(description='minPMI', value=0.0, min=-1.0, max=1.0, step=0.01)
 		pbox.append(widgets.HBox([self.edgeType_w,self.minConf_w,self.minPMI_w]))
 
-		self.nodeSup_w=widgets.Checkbox( value=False, description='nodeにもminSupを適用する', disabled=False)
+		self.nodeSup_w=widgets.Checkbox( value=True, description='nodeにもminSupを適用する', disabled=False)
 		pbox.append(self.nodeSup_w)
 
 		box=widgets.VBox(pbox)

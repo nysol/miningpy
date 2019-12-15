@@ -49,6 +49,10 @@ class classo_w(object):
 			self.parent.msg_w.value="##ERROR: 出力dirが入力されていません"
 			return False
 
+		if params["y"] in params["nums"] or params["y"] in params["cats"]:
+			self.parent.msg_w.value="##ERROR: 入力変数に出力変数が含まれています:%s"%params["y"]
+			return False
+
 		script1=wlib.readSource("nysol.mining.cPredict","cPredict",deepOutput)
 		script2=wlib.readSource("nysol.mining.classo","classo",deepOutput,["nysol.mining.cPredict"])
 		script3=wlib.readSource("nysol.mining.csv2df")
@@ -171,12 +175,11 @@ pred.save("{oPath}/{oDir}/pred")
 		pbox.append(widgets.HBox([self.num_w.widget(),self.cat_w.widget()]))
 
 		# 各種しきい値
-		self.minSamplesLeaf_w=widgets.FloatSlider(description='枝刈度', value=0.0, min=0.0, max=0.5, step=0.01, disabled=False, orientation='horizontal')
 		label=widgets.Textarea(rows=3,disabled=True,layout=widgets.Layout(width="65%"),
     value=
-"""クラス数は
+"""
 """)
-		pbox.append(widgets.VBox([label, self.minSamplesLeaf_w]))
+		pbox.append(widgets.VBox([label]))
 
 		box=widgets.VBox(pbox)
 		return box

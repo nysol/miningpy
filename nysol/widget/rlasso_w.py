@@ -49,6 +49,14 @@ class rlasso_w(object):
 			self.parent.msg_w.value="##ERROR: 出力dirが入力されていません"
 			return False
 
+		if params["y"] in params["nums"] or params["y"] in params["cats"]:
+			self.parent.msg_w.value="##ERROR: 入力変数に出力変数が含まれています:%s"%params["y"]
+			return False
+
+		if params["y"] in params["nums"] or params["y"] in params["cats"]:
+			self.parent.msg_w.value="##ERROR: 入力変数に出力変数が含まれています:%s"%params["y"]
+			return False
+
 		script1=wlib.readSource("nysol.mining.rPredict","rPredict",deepOutput)
 		script2=wlib.readSource("nysol.mining.rlasso","rlasso",deepOutput,["nysol.mining.rPredict"])
 		script3=wlib.readSource("nysol.mining.csv2df")
@@ -171,14 +179,11 @@ pred.save("{oPath}/{oDir}/pred")
 		pbox.append(widgets.HBox([self.num_w.widget(),self.cat_w.widget()]))
 
 		# 各種しきい値
-		self.minSamplesLeaf_w=widgets.FloatSlider(description='枝刈度', value=0.0, min=0.0, max=0.5, step=0.01, disabled=False, orientation='horizontal')
 		label=widgets.Textarea(rows=3,disabled=True,layout=widgets.Layout(width="65%"),
     value=
-"""枝刈度にはリーフの最小サンプル数(min_samples_leaf)を利用する。
-値は、全サンプル数に対する割合で指定する(min_samples_leaf=(0.0,0.5])。
-0.0に設定すると、cross-validationでテスト誤差最小の枝刈度を自動選択する。
+"""
 """)
-		pbox.append(widgets.VBox([label, self.minSamplesLeaf_w]))
+		pbox.append(widgets.VBox([label]))
 
 		box=widgets.VBox(pbox)
 		return box
