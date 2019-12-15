@@ -54,7 +54,7 @@ class rtree(object):
 		if len(self.y)>=10 and not "min_samples_leaf" in params:
 			#parameters = {'min_impurity_decrease':list(np.arange(0.0,0.1,0.01))}
 			# ベイズ最適化による最適min_impurity_decreaseの探索(CVによる推定)
-			spaces = [(0.0001,0.5, 'uniform')]
+			spaces = [(0.01,0.5, 'uniform')]
 			res = gp_minimize(self.objectiveFunction, spaces, n_calls=20, random_state=11)
 			self.cv_minFun=res.fun # 最小の目的関数値
 			self.cv_minX=res.x[0] # 最適パラメータ(枝刈り度)

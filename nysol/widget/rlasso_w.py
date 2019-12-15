@@ -43,7 +43,6 @@ class rlasso_w(object):
 		params["y"]    = self.y_w.getValue()
 		params["nums"] = list(self.num_w.getValue())
 		params["cats"] = list(self.cat_w.getValue())
-		params["minSamplesLeaf"]=self.minSamplesLeaf_w.value
 
 		if params["oDir"]=="":
 			self.parent.msg_w.value="##ERROR: 出力dirが入力されていません"
@@ -72,9 +71,6 @@ xNames.remove("{y}")
 y=pd.DataFrame(ds.loc[:,"{y}"])
 x=ds.loc[:,xNames]
 
-config=dict()
-config["max_depth"]=10
-config["min_samples_leaf"]={minSamplesLeaf}
 model=rlasso(x,y)
 
 model.build()
