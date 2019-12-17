@@ -58,6 +58,7 @@ class mitemset_w(object):
 import nysol.take as nt
 import nysol.mcmd as nm
 nm.setMsgFlg(True)
+print("#### START")
 """
 
 		params="""
@@ -102,6 +103,7 @@ nt.mitemset(i=traFile,
 				u=maxLen,
 				p=minGR,
 				top=top).run()
+print("#### END")
 """
 
 		# 出力系

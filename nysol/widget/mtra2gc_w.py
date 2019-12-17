@@ -129,7 +129,7 @@ nnpie.mnetpie(ei=op+"/edge.csv",
 		# traID 項目
 		config_t={
 			"options":[],
-			"title":"トランザクションID",
+			"title":"トランザクションID項目",
 			"rows":5,
 			"width":300,
 			"multiSelect":False,

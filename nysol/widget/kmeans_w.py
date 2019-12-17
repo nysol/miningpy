@@ -62,6 +62,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from yellowbrick.cluster import InterclusterDistance
+print("#### START")
 
 ########### parameter設定
 iFile="{iFile}" # 入力CSVファイル名
@@ -98,7 +99,7 @@ visualizer.show()
 # CSVに出力
 out.to_csv("{oPath}/{oDir}/predict.csv",index_label=None,encoding="utf-8")
 
-print("## done")
+print("#### END")
 """.format(**params)
 
 		# script tabにセット
@@ -141,7 +142,7 @@ print("## done")
 		# id 項目
 		config_t={
 			"options":[],
-			"title":"サンプルID",
+			"title":"サンプルID項目",
 			"rows":5,
 			"blank":True,
 			"width":300,
@@ -153,7 +154,7 @@ print("## done")
 		# 入力変数項目
 		config_i={
 			"options":[],
-			"title":"入力変数",
+			"title":"数値説明変数",
 			"rows":5,
 			#"blank":True,
 			"width":300,

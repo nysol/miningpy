@@ -72,12 +72,15 @@ uskew:不偏歪度, kurt:尖度, ukurt:不偏尖度
 
 		lib="""
 import nysol.mcmd as nm
+nm.setMsgFlg(True)
+print("#### START")
 """
 		script="""
 f=None
 f<<=nm.mcut(%s)
 f<<=nm.mstats(%s)
 f.run(msg='on')
+print("#### END")
 """%(params1,params2)
 
 		output="""

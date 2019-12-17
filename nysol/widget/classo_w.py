@@ -56,6 +56,7 @@ class classo_w(object):
 		script2=wlib.readSource("nysol.mining.classo","classo",deepOutput,["nysol.mining.cPredict"])
 		script3=wlib.readSource("nysol.mining.csv2df")
 		script4="""
+print("#### START")
 # 出力ディレクトリを作成する
 os.makedirs("{oPath}"+"/"+"{oDir}",exist_ok=True)
 
@@ -79,6 +80,7 @@ model.save("{oPath}/{oDir}/model")
 pred=model.predict(x)
 pred.evaluate(y)
 pred.save("{oPath}/{oDir}/pred")
+print("#### END")
 """.format(**params)
 
 		script_w.value = script1+script2+script3+script4
@@ -124,7 +126,7 @@ pred.save("{oPath}/{oDir}/pred")
 		# id 項目
 		config_id={
 			"options":[],
-			"title":"id項目(指定しなくても良い)",
+			"title":"サンプルID項目(指定しなくても良い)",
 			"rows":5,
 			"width":300,
 			"blank":True,
@@ -136,7 +138,7 @@ pred.save("{oPath}/{oDir}/pred")
 		# 数値変数 項目
 		config_n={
 			"options":[],
-			"title":"数値変数(複数選択可)",
+			"title":"数値説明変数(複数選択可)",
 			"rows":5,
 			"width":300,
 			"blank":True,
@@ -148,7 +150,7 @@ pred.save("{oPath}/{oDir}/pred")
 		# cat変数 項目
 		config_c={
 			"options":[],
-			"title":"カテゴリ変数(複数選択可)",
+			"title":"カテゴリ説明変数(複数選択可)",
 			"rows":5,
 			"width":300,
 			"blank":True,
@@ -160,7 +162,7 @@ pred.save("{oPath}/{oDir}/pred")
 		# y 項目
 		config_y={
 			"options":[],
-			"title":"出力変数(y)",
+			"title":"目的変数項目",
 			"rows":5,
 			"width":300,
 			"multiSelect":False,

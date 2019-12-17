@@ -61,6 +61,8 @@ class tra2tbl_w(object):
 
 		script1=wlib.readSource("nysol.mining.tra2tbl")
 		script2="""
+print("#### START")
+
 iFile="{iFile}"
 oFile="{oPath}/{oFile}"
 tidFld="{tid}"
@@ -72,6 +74,7 @@ aggStat="{stat}"
 klassFld="{klass}"
 
 tra2tbl(iFile,oFile,tidFld,itemFld,null=null,dummy=dummy,aggFld=aggFld,aggStat=aggStat,klassFld=klassFld)
+print("#### END")
 """.format(**params)
 
 		script_w.value = script1+script2
@@ -114,7 +117,7 @@ tra2tbl(iFile,oFile,tidFld,itemFld,null=null,dummy=dummy,aggFld=aggFld,aggStat=a
 		# key 項目
 		config_tid={
 			"options":[],
-			"title":"traID項目",
+			"title":"トランザクションID項目",
 			"rows":5,
 			"width":300,
 			"multiSelect":False,
@@ -125,7 +128,7 @@ tra2tbl(iFile,oFile,tidFld,itemFld,null=null,dummy=dummy,aggFld=aggFld,aggStat=a
 		# item 項目
 		config_item={
 			"options":[],
-			"title":"アイテム",
+			"title":"アイテム項目",
 			"rows":5,
 			"width":300,
 			"multiSelect":False,
@@ -149,7 +152,7 @@ tra2tbl(iFile,oFile,tidFld,itemFld,null=null,dummy=dummy,aggFld=aggFld,aggStat=a
 		# クラス項目
 		config_klass={
 			"options":[],
-			"title":"クラス項目",
+			"title":"目的変数項目",
 			"rows":5,
 			"blank":True,
 			"width":300,

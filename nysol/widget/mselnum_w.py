@@ -72,11 +72,13 @@ class mselnum_w(object):
 		lib="""
 import nysol.mcmd as nm
 nm.setMsgFlg(True)
+print("#### START")
 """
 		script="""
 f=None
 f<<=nm.mselnum(%s)
 f.run(msg='on')
+print("#### END")
 """%(",".join(params))
 
 		output="""
@@ -158,7 +160,7 @@ oFile="%s"
 		# field 項目
 		config_f={
 			"options":[],
-			"title":"item",
+			"title":"数値項目",
 			"rows":5,
 			"width":300,
 			"multiSelect":False,

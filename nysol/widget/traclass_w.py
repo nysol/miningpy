@@ -87,6 +87,7 @@ f<<=nm.mjoin(k='{key}',m=klass,f='{newName}',n=True,i='{iFile}')
 f<<=nm.mselstr(f='{fld}',v='{val}',r={reverse_r},head={head},tail={tail},sub={sub})
 f<<=nm.mnullto(f='{newName}',v='0',o='{oFile}')
 f.run()
+print("#### END")
 """.format(**params)
 
 		header="""
@@ -100,6 +101,7 @@ f.run()
 		lib="""
 import nysol.mcmd as nm
 nm.setMsgFlg(True)
+print("#### START")
 """
 		output="""
 # ファイル出力された結果
@@ -185,7 +187,7 @@ oFile="%s"
 		# key 項目
 		config_k={
 			"options":[],
-			"title":"key単位選択の項目",
+			"title":"トランザクションID項目",
 			"rows":5,
 			"width":300,
 			"multiSelect":False,
@@ -196,7 +198,7 @@ oFile="%s"
 		# field 項目
 		config_f={
 			"options":[],
-			"title":"item",
+			"title":"アイテム項目",
 			"rows":5,
 			"width":300,
 			"multiSelect":False,

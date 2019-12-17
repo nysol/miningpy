@@ -69,11 +69,13 @@ class mjoin_w(object):
 		lib="""
 import nysol.mcmd as nm
 nm.setMsgFlg(True)
+print("#### START")
 """
 		script="""
 f=None
 f<<=nm.mjoin(%s)
 f.run(msg='on')
+print("#### END")
 """%(",".join(params))
 
 		output="""
