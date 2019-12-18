@@ -19,47 +19,36 @@ class rtree_w(object):
 		self.parent=parent
 		self.parent.deepOutput_w.disabled=False
 
-	def exe(self,script_w,output_w):
-		if self.iFile is None:
-			self.parent.msg_w.value = "##ERROR: 入力ファイルが指定されていません。"
+	def exe(self,script_w):
+		params={}
+		params["iFile"]= self.iName_w.value
+		params["oPath"]= self.oPath_w.value+"/"+self.oDir_w.value
+
+		if not wlib.iFileCheck(params["iFile"],self.parent.msg_w):
 			return False
-		if not os.path.isfile(self.iFile):
-			self.parent.msg_w.value = "##ERROR: 入力にはcsvファイルを指定して下さい。"
+		if not wlib.blankCheck(self.oDir_w.value,"出力dir名",self.parent.msg_w):
 			return False
-		if self.oPath is None:
-			self.parent.msg_w.value = "##ERROR: 出力パスが指定されていません。"
-			return False
-		if not os.path.isdir(self.oPath):
-			self.parent.msg_w.value = "##ERROR: 出力dirにはディレクトリを指定して下さい。"
+		if not wlib.oPathCheck(params["oPath"],self.parent.msg_w):
 			return False
 
 		deepOutput=self.parent.deepOutput_w.value
 
-		params={}
-		params["iFile"]= self.iFile
-		params["oPath"]= self.oPath
-		params["oDir"] = self.oDir_w.value
 		params["id_"]  = self.id_w.getValue()
 		params["y"]    = self.y_w.getValue()
 		params["nums"] = list(self.num_w.getValue())
 		params["cats"] = list(self.cat_w.getValue())
 		params["minSamplesLeaf"]=self.minSamplesLeaf_w.value
 
-		if params["oDir"]=="":
-			self.parent.msg_w.value="##ERROR: 出力dirが入力されていません"
-			return False
-
 		if params["y"] in params["nums"] or params["y"] in params["cats"]:
-			self.parent.msg_w.value="##ERROR: 入力変数に出力変数が含まれています:%s"%params["y"]
+			self.parent.msg_w.value="##ERROR: 説明変数に目的変数が含まれています:%s"%params["y"]
 			return False
 
 		script1=wlib.readSource("nysol.mining.rtree","rtree",deepOutput)
-		print("script",script1)
 		script2=wlib.readSource("nysol.mining.csv2df")
 		script3="""
 print("#### START")
 # 出力ディレクトリを作成する
-os.makedirs("{oPath}"+"/"+"{oDir}",exist_ok=True)
+os.makedirs("{oPath}",exist_ok=True)
 
 # pandasデータを作成する
 df,ds=csv2df("{iFile}", "{id_}", {nums}+["{y}"], [], {cats})
@@ -79,11 +68,11 @@ print("cv_minFunc",model.cv_minFun)
 print("cv_minX",model.cv_minX)
 print("score",model.score)
 model.visualize()
-model.save("{oPath}/{oDir}/model")
+model.save("{oPath}/model")
 
 pred=model.predict(x)
 pred.evaluate(y)
-pred.save("{oPath}/{oDir}/pred")
+pred.save("{oPath}/pred")
 print("#### END")
 """.format(**params)
 
@@ -91,22 +80,19 @@ print("#### END")
 		return True
 
 	def setoPath(self,oPath):
-		self.oPath=os.path.abspath(os.path.expanduser(oPath))
-		self.oPath_w.value=self.oPath
+		self.oPath_w.value=os.path.abspath(os.path.expanduser(oPath))
 
 	def setiFile(self,iFiles,propText):
-		self.iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
-		self.propText=propText
-		if self.iFile is None or not os.path.isfile(self.iFile):
+		# parameter設定tabに反映
+		iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.iName_w.value=iFile
+		self.iText_w.value=propText
+		if iFile is None or not os.path.isfile(iFile):
 			self.parent.msg_w.value = "##ERROR: 入力ファイルが選ばれていません。"
 			return
 
-		# parameter設定tabに反映
-		self.fName_w.value=self.iFile
-		self.fText_w.value=self.propText
-
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.iFile)
+		fldNames=wlib.getCSVheader(iFile)
 		self.id_w.addOptions(copy.copy(fldNames))
 		self.y_w.addOptions(copy.copy(fldNames))
 		self.num_w.addOptions(copy.copy(fldNames))
@@ -117,10 +103,10 @@ print("#### END")
 		pbox=[]
 
 		# 入力ファイル名とファイル内容
-		self.fName_w =widgets.Text(description="入力ファイル",value="",layout=widgets.Layout(width='99%'),disabled=False)
-		self.fText_w =widgets.Textarea(value="",rows=5,layout=widgets.Layout(width='99%'),disabled=True)
-		pbox.append(self.fName_w)
-		pbox.append(self.fText_w)
+		self.iName_w =widgets.Text(description="入力ファイル",value="",layout=widgets.Layout(width='99%'),disabled=False)
+		self.iText_w =widgets.Textarea(value="",rows=5,layout=widgets.Layout(width='99%'),disabled=True)
+		pbox.append(self.iName_w)
+		pbox.append(self.iText_w)
 		self.oPath_w =widgets.Text(description="出力パス",value="",layout=widgets.Layout(width='100%'),disabled=False)
 		pbox.append(self.oPath_w)
 		self.oDir_w =widgets.Text(description="出力dir名",value="",layout=widgets.Layout(width='100%'),disabled=False)

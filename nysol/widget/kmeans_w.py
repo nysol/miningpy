@@ -24,27 +24,28 @@ class kmeans_w(object):
 	def setParent(self,parent):
 		self.parent=parent
 
-	def exe(self,script_w,output_w):
+	def exe(self,script_w):
 		params={}
-		params["iFile"]=self.iFile
+		params["iFile"]= self.iName_w.value
+		params["oPath"]= self.oPath_w.value
+		params["oDir"] = self.oDir_w.value
+
+		if not wlib.iFileCheck(params["iFile"],self.parent.msg_w):
+			return False
+		if not wlib.blankCheck(params["oDir"],"出力dir名",self.parent.msg_w):
+			return False
+		if not wlib.oPathCheck(params["oPath"],self.parent.msg_w):
+			return False
+
 		#params["_id"]  =self.id_w.getValue()
 		params["x"]    =list(self.x_w.getValue())
-		params["oPath"]=self.oPath
-		params["oDir"] =self.oDir_w.value
 		params["algo"] =self.algo_w.value
 		params["k"]    =self.k_w.value
 
 		#if params["_id"] in params["x"]:
 		#	self.parent.msg_w.value="##ERROR: idと入力変数が重複指定されています"
 		#	return False
-		if not os.path.isfile(params["iFile"]):
-			self.parent.msg_w.value="##ERROR: 入力ファイルが指定されていません"
-			return False
-		if params["oDir"]=="":
-			self.parent.msg_w.value="##ERROR: 出力dirが入力されていません"
-			return False
-		if params["k"]=="":
-			self.parent.msg_w.value="##ERROR: クラスタ数が入力されていません"
+		if not wlib.blankCheck(params["k"],"クラスタ数",self.parent.msg_w):
 			return False
 
 		header="""
@@ -102,39 +103,35 @@ out.to_csv("{oPath}/{oDir}/predict.csv",index_label=None,encoding="utf-8")
 print("#### END")
 """.format(**params)
 
-		# script tabにセット
 		script_w.value = script
-
 		return True
 
 	def setiFile(self,iFiles,propText):
-		self.iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
-		if not os.path.isfile(self.iFile):
-			return
-		self.propText=propText
-
 		# parameter設定tabに反映
-		self.iFile_w.value=self.iFile
-		self.iFileTxt_w.value=self.propText
+		iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.iName_w.value=iFile
+		self.iText_w.value=propText
+		if iFile is None or not os.path.isfile(iFile):
+			self.parent.msg_w.value = "##ERROR: 入力ファイルが選ばれていません。"
+			return
 
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.iFile)
+		fldNames=wlib.getCSVheader(iFile)
 		#self.id_w.addOptions(copy.copy(fldNames))
 		self.x_w.addOptions(copy.copy(fldNames))
 
 	def setoPath(self,oPath):
-		self.oPath=os.path.abspath(os.path.expanduser(oPath))
-		self.oPath_w.value=self.oPath
+		self.oPath_w.value=os.path.abspath(os.path.expanduser(oPath))
 
 	def widget(self):
 		pbox=[]
 
 		# ファイル名とファイル内容
-		self.iFile_w =widgets.Text(description="トランザクション",value="",layout=Layout(width='99%'),disabled=True)
-		self.iFileTxt_w =widgets.Textarea(value="",rows=5,layout=Layout(width='99%'),disabled=True)
-		pbox.append(self.iFile_w)
-		pbox.append(self.iFileTxt_w)
-		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=True)
+		self.iName_w =widgets.Text(description="トランザクション",value="",layout=Layout(width='99%'),disabled=False)
+		self.iText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='99%'),disabled=True)
+		pbox.append(self.iName_w)
+		pbox.append(self.iText_w)
+		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oPath_w)
 		self.oDir_w =widgets.Text(description="ディレクトリ名",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oDir_w)

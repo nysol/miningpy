@@ -22,15 +22,15 @@ class traclass_w(object):
 		self.version="0.10"
 		self.date=datetime.now()
 
-		self.iFile=None
-		self.oPath=None
-		self.oFile=None
-
 	def setParent(self,parent):
 		self.parent=parent
 
-	def exe(self,script_w,output_w):
+	def exe(self,script_w):
 		params={}
+		params["iFile"]= self.iName_w.value
+		params["oPath"]= self.oPath_w.value
+		params["oFile"]= self.oFile_w.value
+
 		params["key"]=self.key_w.getValue()
 		params["fld"]=self.field_w.getValue()
 		params["val"]=self.value_w.value
@@ -38,19 +38,10 @@ class traclass_w(object):
 
 		params["reverse"]=self.reverse_w.value
 		params["reverse_r"]=not params["reverse"]
-		oFile=self.oFile_w.value
-		if oFile=="":
-			self.parent.msg_w.value="##ERROR: 出力ファイルが入力されていません"
-			return False
-		params["oFile"]=self.oPath+"/"+oFile
-		params["iFile"]=self.iFile
 		
-		if params["val"]=="":
-			self.parent.msg_w.value="##ERROR: 「値」が入力されていません。"
+		if not wlib.blankCheck(params["val"],"「値」",self.parent.msg_w):
 			return False
-
-		if params["newName"]=="":
-			self.parent.msg_w.value="##ERROR: 「クラス名」が入力されていません。"
+		if not wlib.blankCheck(params["newName"],"「クラス名」",self.parent.msg_w):
 			return False
 
 		_head=self.head_w.value
@@ -85,7 +76,7 @@ klass<<=nm.muniq(k='{key},{newName}')
 f=None
 f<<=nm.mjoin(k='{key}',m=klass,f='{newName}',n=True,i='{iFile}')
 f<<=nm.mselstr(f='{fld}',v='{val}',r={reverse_r},head={head},tail={tail},sub={sub})
-f<<=nm.mnullto(f='{newName}',v='0',o='{oFile}')
+f<<=nm.mnullto(f='{newName}',v='0',o='{oPath}/{oFile}')
 f.run()
 print("#### END")
 """.format(**params)
@@ -106,35 +97,27 @@ print("#### START")
 		output="""
 # ファイル出力された結果
 oFile="%s"
-"""%(oFile)
+"""%(params["oFile"])
 
-		# script tabにセット
 		script_w.value = header+lib+script
-
-		# outputscript tabにセット
-		output_w.value = output
-
 		return True
 
 	def setiFile(self,iFiles,propText):
-		self.iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
-		self.propText=propText
-
 		# parameter設定tabに反映
-		self.iName_w.value=self.iFile
-		self.iText_w.value=self.propText # ファイル内容
-		if self.iFile is None or not os.path.isfile(self.iFile):
+		iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.iName_w.value=iFile
+		self.iText_w.value=propText # ファイル内容
+		if iFile is None or not os.path.isfile(iFile):
 			self.parent.msg_w.value = "##ERROR: 入力ファイルが選ばれていません。"
 			return
 
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.iFile)
+		fldNames=wlib.getCSVheader(iFile)
 		self.key_w.addOptions(copy.copy(fldNames))
 		self.field_w.addOptions(copy.copy(fldNames))
 
 	def setoPath(self,oPath):
-		self.oPath=os.path.abspath(os.path.expanduser(oPath))
-		self.oPath_w.value=self.oPath
+		self.oPath_w.value=os.path.abspath(os.path.expanduser(oPath))
 
 	def search_h(self,b):
 		field=self.field_w.getValue()
@@ -163,8 +146,9 @@ oFile="%s"
 			tail=False
 
 		#print(field,sub,head,tail,value)
+		iFile=self.iName_w.value
 		f=None
-		f<<=nm.mcut(f=field,i=self.iFile)
+		f<<=nm.mcut(f=field,i=iFile)
 		if value!="":
 			f<<=nm.mselstr(f=field,sub=sub,head=head,tail=tail,r=reverse,v=value)
 		f<<=nm.muniq(k=field)
@@ -175,11 +159,11 @@ oFile="%s"
 	def widget(self):
 		pbox=[]
 		# ファイル名とファイル内容
-		self.iName_w =widgets.Text(description="入力ファイル",value="",layout=Layout(width='100%'),disabled=True)
-		self.iText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
+		self.iName_w =widgets.Text(description="入力ファイル",value="",layout=Layout(width='100%'),disabled=False)
+		self.iText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.iName_w)
 		pbox.append(self.iText_w)
-		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=True)
+		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oPath_w)
 		self.oFile_w =widgets.Text(description="ファイル名",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oFile_w)

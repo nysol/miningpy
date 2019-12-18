@@ -42,7 +42,9 @@ class rtree(object):
 		#print(clf.get_params())
 		skFold=KFold(n_splits=10,random_state=11)
 
-		return np.mean(cross_val_score(regr, self.x, self.y, cv=skFold, scoring='neg_mean_squared_error'))
+		score=np.mean(cross_val_score(regr, self.x, self.y, cv=skFold, scoring='neg_mean_squared_error'))*(-1)
+		print("space",spaces[0],score)
+		return score
 		#return np.mean(cross_val_score(regr, self.x, self.y, cv=skFold, scoring='neg_mean_absolute_error'))
 		#scores = cross_validation.cross_val_score(regr, X_digits, Y_digits, scoring='mean_squared_error', cv=loo,)
 
@@ -51,7 +53,7 @@ class rtree(object):
 		# ベイズ最適化による最適min_samples_leafの探索(CVによる推定)
 		self.cv_minFun=None
 		self.cv_minX=None
-		if len(self.y)>=10 and not "min_samples_leaf" in params:
+		if len(self.y)>=10 and params["min_samples_leaf"]==0.0:
 			#parameters = {'min_impurity_decrease':list(np.arange(0.0,0.1,0.01))}
 			# ベイズ最適化による最適min_impurity_decreaseの探索(CVによる推定)
 			spaces = [(0.01,0.5, 'uniform')]

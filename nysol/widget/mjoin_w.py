@@ -22,41 +22,46 @@ class mjoin_w(object):
 		self.version="0.10"
 		self.date=datetime.now()
 
-		self.iFile=None
-		self.oPath=None
-		self.oFile=None
-
 	def setParent(self,parent):
 		self.parent=parent
 
-	def exe(self,script_w,output_w):
+	def exe(self,script_w):
+		params={}
+		params["iFile"]= self.iName_w.value
+		params["mFile"]= self.mName_w.value
+		params["oPath"]= self.oPath_w.value
+		params["oFile"]= self.oFile_w.value
+
+		if not wlib.iFileCheck(params["iFile"],self.parent.msg_w):
+			return False
+		if not wlib.iFileCheck(params["mFile"],self.parent.msg_w):
+			return False
+		if not wlib.blankCheck(params["oFile"],"出力ファイル名",self.parent.msg_w):
+			return False
+		if not wlib.oPathCheck(params["oPath"],self.parent.msg_w):
+			return False
+
 		iKey=self.iKey_w.getValue()
 		mKey=self.mKey_w.getValue()
 		field=self.field_w.getValue()
 		iOuter=self.iOuter_w.value
 		mOuter=self.mOuter_w.value
-		oFile=self.oFile_w.value
-		if oFile=="":
-			self.parent.msg_w.value="##ERROR: 出力ファイルが入力されていません"
-			return False
-		oFile=self.oPath+"/"+oFile
 	
-		if field=="":
-			self.parent.msg_w.value = "##ERROR: 「結合する項目」が選ばれていません。"
+		if not wlib.blankCheck(field,"結合する項目",self.parent.msg_w):
 			return False
 
-		params=[]
-		params.append("k='%s'"%(iKey))
+		par=[]
+		par.append("k='%s'"%(iKey))
 		if mKey!="":
-			params.append("K='%s'"%(mKey))
-		params.append("m='%s'"%(self.mFile))
-		params.append("f='%s'"%(field))
+			par.append("K='%s'"%(mKey))
+		par.append("m='%s'"%(params["mFile"]))
+		par.append("f='%s'"%(field))
 		if iOuter:
-			params.append("n=True")
+			par.append("n=True")
 		if mOuter:
-			params.append("N=True")
-		params.append("i='%s'"%(self.iFile))
-		params.append("o='%s'"%(oFile))
+			par.append("N=True")
+		par.append("i='%s'"%(params["iFile"]))
+		par.append("o='%s/%s'"%(params["oPath"],params["oFile"]))
 
 		header="""
 #################################
@@ -76,49 +81,35 @@ f=None
 f<<=nm.mjoin(%s)
 f.run(msg='on')
 print("#### END")
-"""%(",".join(params))
+"""%(",".join(par))
 
-		output="""
-# ファイル出力された結果
-oFile="%s"
-"""%(self.oFile)
-
-		# script tabにセット
 		script_w.value = header+lib+script
-
-		# outputscript tabにセット
-		output_w.value = output
-
 		return True
 
 	def setiFile(self,iFiles,propText):
-		self.iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
-		self.propText=propText
-
 		# parameter設定tabに反映
-		self.fName_w.value=self.iFile
-		self.fText_w.value=self.propText # ファイル内容
-		if self.iFile is None or not os.path.isfile(self.iFile):
+		iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.iName_w.value=iFile
+		self.iText_w.value=propText # ファイル内容
+		if iFile is None or not os.path.isfile(iFile):
 			self.parent.msg_w.value = "##ERROR: 入力ファイルが選ばれていません。"
 			return
 
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.iFile)
+		fldNames=wlib.getCSVheader(iFile)
 		self.iKey_w.addOptions(copy.copy(fldNames))
 
 	def setmFile(self,iFiles,propText):
-		self.mFile=os.path.abspath(os.path.expanduser(iFiles[0]))
-		self.propText=propText
-
 		# parameter設定tabに反映
-		self.mName_w.value=self.mFile
-		self.mText_w.value=self.propText # ファイル内容
-		if self.mFile is None or not os.path.isfile(self.mFile):
+		mFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.mName_w.value=mFile
+		self.mText_w.value=propText # ファイル内容
+		if mFile is None or not os.path.isfile(mFile):
 			self.parent.msg_w.value = "##ERROR: 参照ファイルが選ばれていません。"
 			return
 
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.mFile)
+		fldNames=wlib.getCSVheader(mFile)
 		self.mKey_w.addOptions(copy.copy(fldNames))
 		self.field_w.addOptions(copy.copy(fldNames))
 
@@ -130,15 +121,15 @@ oFile="%s"
 		pbox=[]
 
 		# ファイル名とファイル内容
-		self.fName_w =widgets.Text(description="入力ファイル",value="",layout=Layout(width='100%'),disabled=True)
-		self.fText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
-		pbox.append(self.fName_w)
-		pbox.append(self.fText_w)
-		self.mName_w =widgets.Text(description="参照ファイル",value="",layout=Layout(width='100%'),disabled=True)
+		self.iName_w =widgets.Text(description="入力ファイル",value="",layout=Layout(width='100%'),disabled=False)
+		self.iText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
+		pbox.append(self.iName_w)
+		pbox.append(self.iText_w)
+		self.mName_w =widgets.Text(description="参照ファイル",value="",layout=Layout(width='100%'),disabled=False)
 		self.mText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
 		pbox.append(self.mName_w)
 		pbox.append(self.mText_w)
-		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=True)
+		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oPath_w)
 		self.oFile_w =widgets.Text(description="ファイル名",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oFile_w)

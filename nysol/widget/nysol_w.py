@@ -33,7 +33,7 @@ class nysol_w(object):
 		#os.makedirs(self.oPath, exist_ok=True)
 
 	def exe_h(self,b):
-		ret=self.proc_w.exe(self.script_w,self.output_w)
+		ret=self.proc_w.exe(self.script_w)
 		if ret:
 			self.tab.selected_index = 4
 
@@ -75,7 +75,7 @@ func_w={name2}()
 		newTab.append(self.tab.children[2])
 		newTab.append(self.procBox_w)
 		newTab.append(self.tab.children[4])
-		newTab.append(self.tab.children[5])
+		#newTab.append(self.tab.children[5])
 		self.tab.children=newTab
 
 		self.setiFile2proc()
@@ -168,7 +168,7 @@ func_w={name2}()
 		self.script_w =widgets.Textarea(value="",rows=15,layout=Layout(width='100%'),disabled=False)
 
 		# 出力系スクリプト出力
-		self.output_w =widgets.Textarea(value="",rows=15,layout=Layout(width='100%'),disabled=False)
+		# self.output_w =widgets.Textarea(value="",rows=15,layout=Layout(width='100%'),disabled=False)
 
 
 		### tabコンテナ
@@ -178,7 +178,7 @@ func_w={name2}()
 		children.append(self.oPath_w.widget())
 		children.append(self.procBox_w)
 		children.append(self.script_w)
-		children.append(self.output_w)
+		#children.append(self.output_w)
 		self.tab = widgets.Tab()
 		self.tab.children = children
 		self.tab.set_title(0, "入力")
@@ -186,7 +186,7 @@ func_w={name2}()
 		self.tab.set_title(2, "出力パス")
 		self.tab.set_title(3, "処理")
 		self.tab.set_title(4, "スクリプト")
-		self.tab.set_title(5, "出力系スクリプト")
+		#self.tab.set_title(5, "出力系スクリプト")
 
 		# メッセージ窓
 		self.msg_w = widgets.Text(value="",layout=widgets.Layout(width='100%'),disabled=True)

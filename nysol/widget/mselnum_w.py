@@ -22,14 +22,22 @@ class mselnum_w(object):
 		self.version="0.10"
 		self.date=datetime.now()
 
-		self.iFile=None
-		self.oPath=None
-		self.oFile=None
-
 	def setParent(self,parent):
 		self.parent=parent
 
-	def exe(self,script_w,output_w):
+	def exe(self,script_w):
+		params={}
+		params["iFile"]= self.iName_w.value
+		params["oPath"]= self.oPath_w.value
+		params["oFile"]= self.oFile_w.value
+
+		if not wlib.iFileCheck(params["iFile"],self.parent.msg_w):
+			return False
+		if not wlib.blankCheck(params["oFile"],"出力ファイル名",self.parent.msg_w):
+			return False
+		if not wlib.oPathCheck(params["oPath"],self.parent.msg_w):
+			return False
+
 		key=self.key_w.getValue()
 		field=self.field_w.getValue()
 		vFr=self.vFr_w.value
@@ -37,11 +45,6 @@ class mselnum_w(object):
 		vTo=self.vTo_w.value
 		vToEq=self.vToEq_w.value
 		reverse=self.reverse_w.value
-		oFile=self.oFile_w.value
-		if oFile=="":
-			self.parent.msg_w.value="##ERROR: 出力ファイルが入力されていません"
-			return False
-		oFile=self.oPath+"/"+oFile
 
 		rFr="("
 		rTo=")"
@@ -51,15 +54,15 @@ class mselnum_w(object):
 			rTo="]"
 		range_="%s%s,%s%s"%(rFr,vFr,vTo,rTo)
 
-		params=[]
+		par=[]
 		if key!="":
-			params.append("k=\""+key+"\"")
-		params.append("f=\""+field+"\"")
-		params.append("c=\""+range_+"\"")
+			par.append("k=\""+key+"\"")
+		par.append("f=\""+field+"\"")
+		par.append("c=\""+range_+"\"")
 		if reverse:
-			params.append("r=True")
-		params.append("i=\""+self.iFile+"\"")
-		params.append("o=\""+oFile+"\"")
+			par.append("r=True")
+		par.append("i=\""+params["iFile"]+"\"")
+		par.append("o=\""+params["oPath"]+"/"+params["oFile"]+"\"")
 
 		header="""
 #################################
@@ -79,34 +82,22 @@ f=None
 f<<=nm.mselnum(%s)
 f.run(msg='on')
 print("#### END")
-"""%(",".join(params))
+"""%(",".join(par))
 
-		output="""
-# ファイル出力された結果
-oFile="%s"
-"""%(oFile)
-
-		# script tabにセット
 		script_w.value = header+lib+script
-
-		# outputscript tabにセット
-		output_w.value = output
-
 		return True
 
 	def setiFile(self,iFiles,propText):
-		self.iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
-		self.propText=propText
-		if self.iFile is None or not os.path.isfile(self.iFile):
+		# parameter設定tabに反映
+		iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.iName_w.value=iFile
+		self.iText_w.value=propText # ファイル内容
+		if iFile is None or not os.path.isfile(iFile):
 			self.parent.msg_w.value = "##ERROR: 入力ファイルが選ばれていません。"
 			return
 
-		# parameter設定tabに反映
-		self.iName_w.value=self.iFile
-		self.iText_w.value=self.propText # ファイル内容
-
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.iFile)
+		fldNames=wlib.getCSVheader(iFile)
 		self.key_w.addOptions(copy.copy(fldNames))
 		self.field_w.addOptions(copy.copy(fldNames))
 
@@ -118,7 +109,7 @@ oFile="%s"
 		field=self.field_w.getValue()
 		self.parent.msg_w.value="\"%s\" 項目の統計量を計算中..."%(field)
 		f=None
-		f<<=nm.mcut(f=field,i=self.iFile)
+		f<<=nm.mcut(f=field,i=self.iName_w.value)
 		f<<=nm.msummary(f=field,c="min,median,mean,max")
 		f<<=nm.writelist(header=True)
 		rsl=f.run()

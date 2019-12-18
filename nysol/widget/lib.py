@@ -138,6 +138,33 @@ def readSource(lib,func=None,deepOutput=True,skip=None):
 		script="from %s import %s\n"%(lib,func)
 	return script
 
+def iFileCheck(iFile,msg):
+	if iFile is None:
+		msg.value = "##ERROR: 入力ファイルが指定されていません。"
+		return False
+	if not os.path.isfile(iFile):
+		msg.value = "##ERROR: 入力にはテキストファイルを指定して下さい。"
+		return False
+	return True
+
+def oPathCheck(oPath,msg):
+	if oPath is None:
+		msg.value = "##ERROR: 出力パスが指定されていません。"
+		return False
+	if os.path.isfile(oPath):
+		msg.value = "##ERROR: 出力dir名と同名のファイルが既に存在します。"
+		return False
+	#if not os.path.isdir(oPath):
+	#	msg_w_value = "##ERROR: 出力dirにはディレクトリを指定して下さい。"
+	#	return False
+	return True
+
+def blankCheck(var,title,msg):
+	if var is None or var=="":
+		msg.value = "##ERROR: %sが指定されていません。"%title
+		return False
+	return True
+
 if __name__=='__main__':
 
 	obj=csv2pd("./xxa",top=10)

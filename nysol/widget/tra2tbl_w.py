@@ -22,31 +22,22 @@ class tra2tbl_w(object):
 		self.version="0.10"
 		self.date=datetime.now()
 
-		self.iFile=None
-		self.oPath=None
-		self.oFile=None
-
 	def setParent(self,parent):
 		self.parent=parent
 
-	def exe(self,script_w,output_w):
-		if self.iFile is None:
-			self.parent.msg_w.value = "##ERROR: 入力ファイルが指定されていません。"
+	def exe(self,script_w):
+		params={}
+		params["iFile"]= self.iName_w.value
+		params["oPath"]= self.oPath_w.value
+		params["oFile"]= self.oFile_w.value
+
+		if not wlib.iFileCheck(params["iFile"],self.parent.msg_w):
 			return False
-		if not os.path.isfile(self.iFile):
-			self.parent.msg_w.value = "##ERROR: 入力にはcsvファイルを指定して下さい。"
+		if not wlib.blankCheck(params["oFile"],"出力ファイル名",self.parent.msg_w):
 			return False
-		if self.oPath is None:
-			self.parent.msg_w.value = "##ERROR: 出力パスが指定されていません。"
-			return False
-		if not os.path.isdir(self.oPath):
-			self.parent.msg_w.value = "##ERROR: 出力dirにはディレクトリを指定して下さい。"
+		if not wlib.oPathCheck(params["oPath"],self.parent.msg_w):
 			return False
 
-		params={}
-		params["iFile"]= self.iFile
-		params["oPath"]= self.oPath
-		params["oFile"]= self.oFile_w.value
 		params["tid"] = self.tid_w.getValue()
 		params["item"] = self.item_w.getValue()
 		params["agg"]  = self.agg_w.getValue()
@@ -54,10 +45,6 @@ class tra2tbl_w(object):
 		params["null"]= self.null_w.value
 		params["dummy"]= self.dummy_w.value
 		params["stat"]= self.stat_w.value
-
-		if params["oFile"]=="":
-			self.parent.msg_w.value="##ERROR: 出力ファイル名が入力されていません"
-			return False
 
 		script1=wlib.readSource("nysol.mining.tra2tbl")
 		script2="""
@@ -81,35 +68,32 @@ print("#### END")
 		return True
 
 	def setiFile(self,iFiles,propText):
-		self.iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
-		self.propText=propText
-
 		# parameter設定tabに反映
-		self.iName_w.value=self.iFile
-		self.iText_w.value=self.propText # ファイル内容
-		if self.iFile is None or not os.path.isfile(self.iFile):
+		iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.iName_w.value=iFile
+		self.iText_w.value=propText # ファイル内容
+		if iFile is None or not os.path.isfile(iFile):
 			self.parent.msg_w.value = "##ERROR: 入力ファイルが選ばれていません。"
 			return
 
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.iFile)
+		fldNames=wlib.getCSVheader(iFile)
 		self.tid_w.addOptions(copy.copy(fldNames))
 		self.item_w.addOptions(copy.copy(fldNames))
 		self.agg_w.addOptions(copy.copy(fldNames))
 		self.klass_w.addOptions(copy.copy(fldNames))
 
 	def setoPath(self,oPath):
-		self.oPath=os.path.abspath(os.path.expanduser(oPath))
-		self.oPath_w.value=self.oPath
+		self.oPath_w.value=os.path.abspath(os.path.expanduser(oPath))
 
 	def widget(self):
 		pbox=[]
 		# ファイル名とファイル内容
-		self.iName_w =widgets.Text(description="入力ファイル",value="",layout=Layout(width='100%'),disabled=True)
-		self.iText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
+		self.iName_w =widgets.Text(description="入力ファイル",value="",layout=Layout(width='100%'),disabled=False)
+		self.iText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.iName_w)
 		pbox.append(self.iText_w)
-		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=True)
+		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oPath_w)
 		self.oFile_w =widgets.Text(description="ファイル名",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oFile_w)

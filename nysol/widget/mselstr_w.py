@@ -22,25 +22,28 @@ class mselstr_w(object):
 		self.version="0.10"
 		self.date=datetime.now()
 
-		self.iFile=None
-		self.oPath=None
-		self.oFile=None
-
 	def setParent(self,parent):
 		self.parent=parent
 
-	def exe(self,script_w,output_w):
+	def exe(self,script_w):
+		params={}
+		params["iFile"]= self.iName_w.value
+		params["oPath"]= self.oPath_w.value
+		params["oFile"]= self.oFile_w.value
+
+		if not wlib.iFileCheck(params["iFile"],self.parent.msg_w):
+			return False
+		if not wlib.blankCheck(params["oFile"],"出力ファイル名",self.parent.msg_w):
+			return False
+		if not wlib.oPathCheck(params["oPath"],self.parent.msg_w):
+			return False
+
 		_head=self.head_w.value
 		_tail=self.tail_w.value
 		reverse=self.reverse_w.value
 		key=self.key_w.getValue()
 		field=self.field_w.getValue()
 		value=self.value_w.value
-		oFile=self.oFile_w.value
-		if oFile=="":
-			self.parent.msg_w.value="##ERROR: 出力ファイルが入力されていません"
-			return False
-		oFile=self.oPath+"/"+oFile
 		
 		if value=="":
 			self.parent.msg_w.value="##ERROR: 「値」が入力されていません。"
@@ -63,21 +66,21 @@ class mselstr_w(object):
 			head=False
 			tail=False
 
-		params=[]
+		par=[]
 		if key!="":
-			params.append("k=\""+key+"\"")
-		params.append("f=\""+field+"\"")
-		params.append("v=\""+value+"\"")
+			par.append("k=\""+key+"\"")
+		par.append("f=\""+field+"\"")
+		par.append("v=\""+value+"\"")
 		if reverse:
-			params.append("r=True")
+			par.append("r=True")
 		if head:
-			params.append("head=True")
+			par.append("head=True")
 		if tail:
-			params.append("tail=True")
+			par.append("tail=True")
 		if sub:
-			params.append("sub=True")
-		params.append("i=\""+self.iFile+"\"")
-		params.append("o=\""+oFile+"\"")
+			par.append("sub=True")
+		par.append("i=\""+params["iFile"]+"\"")
+		par.append("o=\""+params["oPath"]+"/"+params["oFile"]+"\"")
 
 		header="""
 #################################
@@ -97,40 +100,27 @@ f=None
 f<<=nm.mselstr(%s)
 f.run(msg='on')
 print("#### END")
-"""%(",".join(params))
+"""%(",".join(par))
 
-		output="""
-# ファイル出力された結果
-oFile="%s"
-"""%(oFile)
-
-		# script tabにセット
 		script_w.value = header+lib+script
-
-		# outputscript tabにセット
-		output_w.value = output
-
 		return True
 
 	def setiFile(self,iFiles,propText):
-		self.iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
-		self.propText=propText
-
 		# parameter設定tabに反映
-		self.iName_w.value=self.iFile
-		self.iText_w.value=self.propText # ファイル内容
-		if self.iFile is None or not os.path.isfile(self.iFile):
+		iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.iName_w.value=iFile
+		self.iText_w.value=propText # ファイル内容
+		if iFile is None or not os.path.isfile(iFile):
 			self.parent.msg_w.value = "##ERROR: 入力ファイルが選ばれていません。"
 			return
 
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.iFile)
+		fldNames=wlib.getCSVheader(iFile)
 		self.key_w.addOptions(copy.copy(fldNames))
 		self.field_w.addOptions(copy.copy(fldNames))
 
 	def setoPath(self,oPath):
-		self.oPath=os.path.abspath(os.path.expanduser(oPath))
-		self.oPath_w.value=self.oPath
+		self.oPath_w.value=os.path.abspath(os.path.expanduser(oPath))
 
 	def search_h(self,b):
 		field=self.field_w.getValue()
@@ -160,7 +150,7 @@ oFile="%s"
 
 		#print(field,sub,head,tail,value)
 		f=None
-		f<<=nm.mcut(f=field,i=self.iFile)
+		f<<=nm.mcut(f=field,i=self.iName_w.value)
 		if value!="":
 			f<<=nm.mselstr(f=field,sub=sub,head=head,tail=tail,r=reverse,v=value)
 		f<<=nm.muniq(k=field)
@@ -171,11 +161,11 @@ oFile="%s"
 	def widget(self):
 		pbox=[]
 		# ファイル名とファイル内容
-		self.iName_w =widgets.Text(description="入力ファイル",value="",layout=Layout(width='100%'),disabled=True)
+		self.iName_w =widgets.Text(description="入力ファイル",value="",layout=Layout(width='100%'),disabled=False)
 		self.iText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
 		pbox.append(self.iName_w)
 		pbox.append(self.iText_w)
-		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=True)
+		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oPath_w)
 		self.oFile_w =widgets.Text(description="ファイル名",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oFile_w)

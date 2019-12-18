@@ -24,13 +24,23 @@ class mtra2gc_w(object):
 	def setParent(self,parent):
 		self.parent=parent
 
-	def exe(self,script_w,output_w):
+	def exe(self,script_w):
 		params={}
-		params["traFile"]  = self.traFile
+		params["version"]  = self.version
+		params["date"]     = self.date
+		params["iFile"]    = self.iName_w.value
+		params["oPath"]    = self.oPath_w.value
+		params["oDir"]     = self.oDir_w.value
+
+		if not wlib.iFileCheck(params["iFile"],self.parent.msg_w):
+			return False
+		if not wlib.blankCheck(params["oDir"],"出力dir名",self.parent.msg_w):
+			return False
+		if not wlib.oPathCheck(params["oPath"],self.parent.msg_w):
+			return False
+
 		params["tid"]      = self.traID_w.getValue()
 		params["item"]     = self.item_w.getValue()
-		params["oPath"]    = self.oPath
-		params["oDir"]     = self.oDir_w.value
 		params["minSup"]   = self.minSup_w.value
 		params["sim"]      = self.edgeType_w.value
 		params["nodeSup"]  = self.nodeSup_w.value
@@ -45,10 +55,6 @@ class mtra2gc_w(object):
 			params["simFld"]  = "PMI"
 			params["undirect"]  = True
 
-		if params["oDir"]=="":
-			self.parent.msg_w.value="##ERROR: 出力dirが入力されていません"
-			return False
-
 		if params["tid"]==params["item"]:
 			self.parent.msg_w.value="##ERROR: トランザクションIDとアイテム項目が同じ項目になってます"
 			return False
@@ -59,12 +65,13 @@ import nysol.take as nt
 import nysol.mcmd as nm
 import nysol.view.mnetpie as nnpie
 nm.setMsgFlg(True)
+print("#### START")
 
 # 出力ディレクトリを作成する
 op="{oPath}"+"/"+"{oDir}"
 os.makedirs(op,exist_ok=True)
 
-nt.mtra2gc(i="{traFile}",
+nt.mtra2gc(i="{iFile}",
 				tid="{tid}",
 				item="{item}",
 				no=op+"/node.csv",
@@ -85,8 +92,13 @@ nnpie.mnetpie(ei=op+"/edge.csv",
 				nodeSizeFld="_nodeSize",
 				undirect={undirect}
 				)
-
+print("#### END")
 """.format(**params)
+
+		#os.system("fdp)
+		"""
+mgv(ei=op+"/edge.csv",ef="e1,e2",o=op+"/graph.dot")
+"""
 
 		#edgeWidthFld="{simFld}",
 
@@ -94,34 +106,31 @@ nnpie.mnetpie(ei=op+"/edge.csv",
 		return True
 
 	def setiFile(self,iFiles,propText):
-		self.traFile=os.path.abspath(os.path.expanduser(iFiles[0]))
-		self.propText=propText
-		if self.traFile is None or not os.path.isfile(self.traFile):
+		# parameter設定tabに反映
+		iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.iName_w.value=iFile
+		self.iText_w.value=propText
+		if iFile is None or not os.path.isfile(iFile):
 			self.parent.msg_w.value = "##ERROR: 入力ファイルが選ばれていません。"
 			return
 
-		# parameter設定tabに反映
-		self.traFile_w.value=self.traFile
-		self.traFileTxt_w.value=self.propText
-
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.traFile)
+		fldNames=wlib.getCSVheader(iFile)
 		self.traID_w.addOptions(copy.copy(fldNames))
 		self.item_w.addOptions(copy.copy(fldNames))
 
 	def setoPath(self,oPath):
-		self.oPath=os.path.abspath(os.path.expanduser(oPath))
-		self.oPath_w.value=self.oPath
+		self.oPath_w.value=os.path.abspath(os.path.expanduser(oPath))
 
 	def widget(self):
 		pbox=[]
 
 		# ファイル名とファイル内容
-		self.traFile_w =widgets.Text(description="トランザクション",value="",layout=Layout(width='99%'),disabled=True)
-		self.traFileTxt_w =widgets.Textarea(value="",rows=5,layout=Layout(width='99%'),disabled=True)
-		pbox.append(self.traFile_w)
-		pbox.append(self.traFileTxt_w)
-		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=True)
+		self.iName_w =widgets.Text(description="トランザクション",value="",layout=Layout(width='99%'),disabled=False)
+		self.iText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='99%'),disabled=True)
+		pbox.append(self.iName_w)
+		pbox.append(self.iText_w)
+		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oPath_w)
 		self.oDir_w =widgets.Text(description="出力dir名",value="",layout=widgets.Layout(width='100%'),disabled=False)
 		pbox.append(self.oDir_w)

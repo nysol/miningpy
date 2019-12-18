@@ -22,10 +22,6 @@ class mstats_w(object):
 		self.version="0.10"
 		self.date=datetime.now()
 
-		self.iFile=None
-		self.oPath=None
-		self.oFile=None
-
 	def help(self):
 		return """sum:合計, mean:纂述平均, count:件数, ucount:件数-1, devsq:偏差平方和, "var":分散, "uvar":不偏分散
 sd:標準偏差, usd:不偏標準偏差, USD:, cv:変動係数, min:最小値, qtile1:第一四分位点, median:中央値
@@ -36,22 +32,29 @@ uskew:不偏歪度, kurt:尖度, ukurt:不偏尖度
 	def setParent(self,parent):
 		self.parent=parent
 
-	def exe(self,script_w,output_w):
+	def exe(self,script_w):
+		params={}
+		params["iFile"]= self.iName_w.value
+		params["oPath"]= self.oPath_w.value
+		params["oFile"]= self.oFile_w.value
+
+		if not wlib.iFileCheck(params["iFile"],self.parent.msg_w):
+			return False
+		if not wlib.blankCheck(params["oFile"],"出力ファイル名",self.parent.msg_w):
+			return False
+		if not wlib.oPathCheck(params["oPath"],self.parent.msg_w):
+			return False
+
 		key=self.key_w.getValue()
 		field=self.field_w.getValue()
 		stat=self.stat_w.value
 		newfld=self.newfld_w.value
-		oFile=self.oFile_w.value
-		if oFile=="":
-			self.parent.msg_w.value="##ERROR: 出力ファイルが入力されていません"
-			return False
-		oFile=self.oPath+"/"+oFile
 
 		flds=[]
 		if key!="":
 			flds.append(key)
 		flds.append(field)
-		params1="f='%s',i='%s'"%(",".join(flds),self.iFile)
+		params1="f='%s',i='%s'"%(",".join(flds),params["iFile"])
 		
 		params2=""
 		if key!="":
@@ -60,7 +63,7 @@ uskew:不偏歪度, kurt:尖度, ukurt:不偏尖度
 			params2+=",f='%s'"%(field)
 		else:
 			params2+=",f='%s:%s'"%(field,newfld)
-		params2+=",c='%s',o='%s'"%(stat,oFile)
+		params2+=",c='%s',o='%s/%s'"%(stat,params["oPath"],params["oFile"])
 
 		header="""
 #################################
@@ -83,47 +86,34 @@ f.run(msg='on')
 print("#### END")
 """%(params1,params2)
 
-		output="""
-# ファイル出力された結果
-oFile="%s"
-"""%(self.oFile)
-
-		# script tabにセット
 		script_w.value = header+lib+script
-
-		# outputscript tabにセット
-		output_w.value = output
-
 		return True
 
 	def setiFile(self,iFiles,propText):
-		self.iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
-		self.propText=propText
-
 		# parameter設定tabに反映
-		self.fName_w.value=self.iFile
-		self.fText_w.value=self.propText # ファイル内容
-		if self.iFile is None or not os.path.isfile(self.iFile):
+		iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.iName_w.value=iFile
+		self.iText_w.value=propText # ファイル内容
+		if iFile is None or not os.path.isfile(iFile):
 			self.parent.msg_w.value = "##ERROR: 入力ファイルが選ばれていません。"
 			return
 
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.iFile)
+		fldNames=wlib.getCSVheader(iFile)
 		self.key_w.addOptions(copy.copy(fldNames))
 		self.field_w.addOptions(copy.copy(fldNames))
 
 	def setoPath(self,oPath):
-		self.oPath=os.path.abspath(os.path.expanduser(oPath))
-		self.oPath_w.value=self.oPath
+		self.oPath_w.value=os.path.abspath(os.path.expanduser(oPath))
 
 	def widget(self):
 		pbox=[]
 		# ファイル名とファイル内容
-		self.fName_w =widgets.Text(description="file name",value="",layout=Layout(width='100%'),disabled=True)
-		self.fText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
-		pbox.append(self.fName_w)
-		pbox.append(self.fText_w)
-		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=True)
+		self.iName_w =widgets.Text(description="file name",value="",layout=Layout(width='100%'),disabled=False)
+		self.iText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
+		pbox.append(self.iName_w)
+		pbox.append(self.iText_w)
+		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oPath_w)
 		self.oFile_w =widgets.Text(description="ファイル名",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oFile_w)

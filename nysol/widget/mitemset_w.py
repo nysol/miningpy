@@ -21,76 +21,67 @@ class mitemset_w(object):
 		self.version="0.10"
 		self.date=datetime.now()
 
-		self.iFile=None
-		self.oPath=None
-		self.oFile=None
-
 	def setParent(self,parent):
 		self.parent=parent
 
-	def exe(self,script_w,output_w):
-		traFile=self.traFile
-		tid=self.traID_w.getValue()
-		item=self.item_w.getValue()
-		klass=self.class_w.getValue()
-		oPath=self.oPath
-		pType=self.type_w.value[0] # 0は先頭文字の(F,C,M)
-		minSup=self.minSup_w.value
-		maxSup=self.maxSup_w.value
-		minLen=self.minLen_w.value
-		maxLen=self.maxLen_w.value
-		minGR=self.minGR_w.value
-		top=self.top_w.value
+	def exe(self,script_w):
+		params={}
+		params["version"]=self.version
+		params["date"]=self.date
+		params["iFile"]= self.iName_w.value
+		params["oPath"]= self.oPath_w.value
+		params["oDir"] = self.oDir_w.value
 
-		if item==tid:
+		if not wlib.iFileCheck(params["iFile"],self.parent.msg_w):
+			return False
+		if not wlib.blankCheck(params["oDir"],"出力dir名",self.parent.msg_w):
+			return False
+		if not wlib.oPathCheck(params["oPath"],self.parent.msg_w):
+			return False
+
+		params["tid"]   =self.traID_w.getValue()
+		params["item"]  =self.item_w.getValue()
+		params["klass"] =self.class_w.getValue()
+		params["pType"] =self.type_w.value[0] # 0は先頭文字の(F,C,M)
+		params["minSup"]=self.minSup_w.value
+		params["maxSup"]=self.maxSup_w.value
+		params["minLen"]=self.minLen_w.value
+		params["maxLen"]=self.maxLen_w.value
+		params["minGR"] =self.minGR_w.value
+		params["top"]   =self.top_w.value
+
+		if params["item"]==params["tid"]:
 			self.parent.msg_w.value="##ERROR: トランザクションIDとアイテム項目が同じ項目になってます"
 			return False
 
-		header="""
+		script="""
 #################################
 # mitemset_w.pyの自動生成スクリプト
-# version: %s
-# 実行日時: %s
+# version: {version}
+# 実行日時: {date}
 #################################
-"""%(self.version,self.date)
-
-		lib="""
+import os
 import nysol.take as nt
 import nysol.mcmd as nm
 nm.setMsgFlg(True)
 print("#### START")
-"""
 
-		params="""
 ########### parameter設定
-traFile="%s" # トランザクションファイル名
-oPath="%s" # 出力ディレクトリ名
-tid="%s" # トランザクションID項目
-item="%s" # アイテム項目
-klass="%s" # クラス項目
-pType="%s" # パターンタイプ(F:頻出集合,C:飽和集合,M:極大集合)
-minSup=%f # minimum support
-maxSup=%f # maximum support
-minLen=%d # minimum length of items
-maxLen=%d # maximum length of items
-minGR=%f # minimum post-probability (klass指定時のみ有効)
-top=%d # 抽出上位件数(supportの大きい順)
-"""%(
-		self.traFile,
-		self.oPath,
-		self.traID_w.getValue(),
-		self.item_w.getValue(),
-		self.class_w.getValue(),
-		self.type_w.value[0],
-		self.minSup_w.value,
-		self.maxSup_w.value,
-		self.minLen_w.value,
-		self.maxLen_w.value,
-		self.minGR_w.value,
-		self.top_w.value
-)
+traFile="{iFile}" # トランザクションファイル名
+oPath="{oPath}/{oDir}" # 出力ディレクトリ名
+tid="{tid}" # トランザクションID項目
+item="{item}" # アイテム項目
+klass="{klass}" # クラス項目
+pType="{pType}" # パターンタイプ(F:頻出集合,C:飽和集合,M:極大集合)
+minSup={minSup} # minimum support
+maxSup={maxSup} # maximum support
+minLen={minLen} # minimum length of items
+maxLen={maxLen} # maximum length of items
+minGR={minGR} # minimum post-probability (klass指定時のみ有効)
+top={top} # 抽出上位件数(supportの大きい順)
 
-		script="""
+os.makedirs(oPath,exist_ok=True)
+
 nt.mitemset(i=traFile,
 				cls=klass,
 				tid=tid,
@@ -104,51 +95,29 @@ nt.mitemset(i=traFile,
 				p=minGR,
 				top=top).run()
 print("#### END")
-"""
-
-		# 出力系
-		output="""
-import pandas as pd
-
-# ファイル出力された結果
-# 頻出アイテム集合
-patternCSV="%s/patterns.csv"
-tid_patsCSV="%s/tid_pats.csv"
-
-# パターン件数
-outCount=len(open("%s/patterns.csv").readlines())
-print(outCount)
-
-pattern=pd.read_csv(patternCSV)
-tid_pats=pd.read_csv(tid_patsCSV)
-pattern
-"""%(self.oPath,self.oPath,self.oPath)
+""".format(**params)
 
 		# script tabにセット
-		script_w.value = header+lib+params+script
-
-		# outputscript tabにセット
-		output_w.value = output
-
+		script_w.value = script
 		return True
 
 	def setiFile(self,iFiles,propText):
-		self.traFile=os.path.abspath(os.path.expanduser(iFiles[0]))
-		self.propText=propText
-
 		# parameter設定tabに反映
-		self.traFile_w.value=self.traFile
-		self.traFileTxt_w.value=self.propText
+		iFile=os.path.abspath(os.path.expanduser(iFiles[0]))
+		self.iName_w.value=iFile
+		self.iText_w.value=propText
+		if iFile is None or not os.path.isfile(iFile):
+			self.parent.msg_w.value = "##ERROR: 入力ファイルが選ばれていません。"
+			return
 
 		# フィールドリスト
-		fldNames=wlib.getCSVheader(self.traFile)
+		fldNames=wlib.getCSVheader(iFile)
 		self.traID_w.addOptions(copy.copy(fldNames))
 		self.item_w.addOptions(copy.copy(fldNames))
 		self.class_w.addOptions(copy.copy(fldNames))
 
 	def setoPath(self,oPath):
-		self.oPath=os.path.abspath(os.path.expanduser(oPath))
-		self.oPath_w.value=self.oPath
+		self.oPath_w.value=os.path.abspath(os.path.expanduser(oPath))
 
 	#  type= : 抽出するパターンの型【オプション:default:F, F:頻出集合, C:飽和集合, M:極大集合】
 	#  s=    : 最小支持度(全トランザクション数に対する割合による指定)【オプション:default:0.05, 0以上1以下の実数】
@@ -164,12 +133,14 @@ pattern
 		pbox=[]
 
 		# ファイル名とファイル内容
-		self.traFile_w =widgets.Text(description="トランザクション",value="",layout=Layout(width='99%'),disabled=True)
-		self.traFileTxt_w =widgets.Textarea(value="",rows=5,layout=Layout(width='99%'),disabled=True)
-		pbox.append(self.traFile_w)
-		pbox.append(self.traFileTxt_w)
-		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=True)
+		self.iName_w =widgets.Text(description="トランザクション",value="",layout=Layout(width='99%'),disabled=False)
+		self.iText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='99%'),disabled=True)
+		pbox.append(self.iName_w)
+		pbox.append(self.iText_w)
+		self.oPath_w =widgets.Text(description="出力パス",value="",layout=Layout(width='100%'),disabled=False)
 		pbox.append(self.oPath_w)
+		self.oDir_w =widgets.Text(description="ディレクトリ名",value="",layout=Layout(width='100%'),disabled=False)
+		pbox.append(self.oDir_w)
 
 		# traID 項目
 		config_t={
@@ -219,7 +190,7 @@ pattern
 		self.maxLen_w=widgets.IntSlider(description='maxLen', value=10, min=1, max=10, step=1)
 		pbox.append(widgets.HBox([self.minLen_w,self.maxLen_w]))
 
-		self.minGR_w=widgets.FloatSlider(description='minGR', value=1.0, min=1.0, max=20.0, step=0.2)
+		self.minGR_w=widgets.FloatSlider(description='minGR', value=1.2, min=1.1, max=20.0, step=0.2)
 		pbox.append(self.minGR_w)
 
 		self.top_w=widgets.IntSlider(description='top', value=1000, min=1, max=10000, step=1)
