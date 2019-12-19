@@ -23,7 +23,7 @@ class mstats_w(object):
 		self.date=datetime.now()
 
 	def help(self):
-		return """sum:合計, mean:纂述平均, count:件数, ucount:件数-1, devsq:偏差平方和, "var":分散, "uvar":不偏分散
+		return """sum:合計, mean:算術平均, count:件数, ucount:件数-1, devsq:偏差平方和, "var":分散, "uvar":不偏分散
 sd:標準偏差, usd:不偏標準偏差, USD:, cv:変動係数, min:最小値, qtile1:第一四分位点, median:中央値
 qtile3:第三四分位点, max:最大値, range:max-min, qrange:qtile3-qtile1, mode:最頻値, skew:歪度,
 uskew:不偏歪度, kurt:尖度, ukurt:不偏尖度

@@ -41,7 +41,7 @@ class traclass_w(object):
 		
 		if not wlib.blankCheck(params["val"],"「値」",self.parent.msg_w):
 			return False
-		if not wlib.blankCheck(params["newName"],"「クラス名」",self.parent.msg_w):
+		if not wlib.blankCheck(params["newName"],"「目的変数名」",self.parent.msg_w):
 			return False
 
 		_head=self.head_w.value

@@ -21,6 +21,7 @@ class nysol_w(object):
 	def __init__(self,path,tools):
 		self.version="0.10"
 		self.date=datetime.now()
+		self.box=None # clearボタン判定のための初期化
 
 		clear_output() # jupyter上の出力領域のクリア
 		self.path=os.path.abspath(os.path.expanduser(path))
@@ -118,6 +119,11 @@ func_w={name2}()
 			return
 
 	def widget(self):
+		# clear buttonを押した場合はオブジェクトが残っているので、
+		# 現在の設定のままself.boxを返す
+		if self.box is not None:
+			return self.box
+
 		### iFileBox
 		if_config={
 			"multiSelect":True,
@@ -126,7 +132,7 @@ func_w={name2}()
 			"actionHandler":None,
 			"actionTitle":"選択"
 	  }
-		self.iFile_w=fileBrowser_w(self.path,if_config)
+		self.iFile_w=fileBrowser_w(self.path,if_config,self)
 
 		### mFileBox
 		mf_config={
@@ -136,18 +142,18 @@ func_w={name2}()
 			"actionHandler":None,
 			"actionTitle":"選択"
 	  }
-		self.mFile_w=fileBrowser_w(self.path,mf_config)
+		self.mFile_w=fileBrowser_w(self.path,mf_config,self)
 
 		### oFileBox
 		of_config={
-			"multiSelect":False,
+			"multiSelect":True,
 			"property":True,
 			"propertyRows":100,
 			"actionHandler":None,
 			"delHandler":True,
 			"newHandler":True
 	   }
-		self.oPath_w=fileBrowser_w(self.path,of_config)
+		self.oPath_w=fileBrowser_w(self.path,of_config,self)
 
 		# ボタン系
 		self.procSel_w=widgets.Dropdown(description="処理",options=self.tools,layout=Layout(width='50%'))
@@ -191,6 +197,6 @@ func_w={name2}()
 		# メッセージ窓
 		self.msg_w = widgets.Text(value="",layout=widgets.Layout(width='100%'),disabled=True)
 
-		box=widgets.VBox([self.msg_w,self.tab])
-		return box
+		self.box=widgets.VBox([self.msg_w,self.tab])
+		return self.box
 

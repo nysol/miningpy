@@ -167,7 +167,7 @@ print("#### END")
 		# class 項目
 		config_c={
 			"options":[],
-			"title":"クラス項目",
+			"title":"目的変数項目",
 			"rows":5,
 			"blank":True,
 			"width":300,
