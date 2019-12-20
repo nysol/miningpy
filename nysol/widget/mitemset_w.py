@@ -54,7 +54,8 @@ class mitemset_w(object):
 			self.parent.msg_w.value="##ERROR: トランザクションIDとアイテム項目が同じ項目になってます"
 			return False
 
-		script="""
+		if self.usetop_w.value==True:
+			script="""
 #################################
 # mitemset_w.pyの自動生成スクリプト
 # version: {version}
@@ -94,6 +95,48 @@ nt.mitemset(i=traFile,
 				u=maxLen,
 				p=minGR,
 				top=top).run()
+print("#### END")
+""".format(**params)
+
+		else:
+			script="""
+#################################
+# mitemset_w.pyの自動生成スクリプト
+# version: {version}
+# 実行日時: {date}
+#################################
+import os
+import nysol.take as nt
+import nysol.mcmd as nm
+nm.setMsgFlg(True)
+print("#### START")
+
+########### parameter設定
+traFile="{iFile}" # トランザクションファイル名
+oPath="{oPath}/{oDir}" # 出力ディレクトリ名
+tid="{tid}" # トランザクションID項目
+item="{item}" # アイテム項目
+klass="{klass}" # クラス項目
+pType="{pType}" # パターンタイプ(F:頻出集合,C:飽和集合,M:極大集合)
+minSup={minSup} # minimum support
+maxSup={maxSup} # maximum support
+minLen={minLen} # minimum length of items
+maxLen={maxLen} # maximum length of items
+minGR={minGR} # minimum post-probability (klass指定時のみ有効)
+
+os.makedirs(oPath,exist_ok=True)
+
+nt.mitemset(i=traFile,
+				cls=klass,
+				tid=tid,
+				item=item,
+				O=oPath,
+				type=pType,
+				s=minSup,
+				sx=maxSup,
+				l=minLen,
+				u=maxLen,
+				p=minGR).run()
 print("#### END")
 """.format(**params)
 
@@ -193,8 +236,9 @@ print("#### END")
 		self.minGR_w=widgets.FloatSlider(description='minGR', value=1.2, min=1.1, max=20.0, step=0.2)
 		pbox.append(self.minGR_w)
 
-		self.top_w=widgets.IntSlider(description='top', value=1000, min=1, max=10000, step=1)
-		pbox.append(self.top_w)
+		self.usetop_w=widgets.Checkbox(value=False, description='上位top番目のsupportをminSupに再設定する', disabled=False,style={'description_width': 'initial'})
+		self.top_w=widgets.IntSlider(description='topの値', value=1000, min=1, max=10000, step=1)
+		pbox.append(widgets.HBox([self.usetop_w,self.top_w]))
 
 		box=widgets.VBox(pbox)
 		return box
