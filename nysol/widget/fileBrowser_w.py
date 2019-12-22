@@ -9,6 +9,7 @@ from IPython.display import clear_output,display
 import csv
 import os
 import glob
+import json
 
 class fileBrowser_w(object):
 	def __init__(self,path,config={},parent=None):
@@ -145,6 +146,14 @@ class fileBrowser_w(object):
 		with open(fName) as f:
 			html_text=f.read()
 		HTML(html_text)
+
+	# fomatter
+	def json_h(self,b):
+		fName=self.getFileName(self.path)
+		self.script_w.value="""import json
+with open("%s") as f:
+	doc=json.load(f)
+"""%(fName)
 
 	# fomatter
 	def png_h(self,b):
@@ -305,16 +314,18 @@ display_png(Image("%s")) # confusion_matrix
 
 		#html_w=widgets.Button(description='html')
 		#html_w.on_click(self.html_h) # HANDLER
-		png_w=widgets.Button( description='png')
+		png_w=widgets.Button( description='png',layout=widgets.Layout(width='100px'))
 		png_w.on_click(self.png_h) # HANDLER
-		csv2pd_w=widgets.Button(description='DataFrame')
+		csv2pd_w=widgets.Button(description='DataFrame',layout=widgets.Layout(width='100px'))
 		csv2pd_w.on_click(self.csv2pd_h) # HANDLER
-		csv2pivot_w=widgets.Button( description='pivot')
+		csv2pivot_w=widgets.Button( description='pivot',layout=widgets.Layout(width='100px'))
 		csv2pivot_w.on_click(self.csv2pivot_h) # HANDLER
-		clear_w=widgets.Button( description='clear')
+		json_w=widgets.Button( description='json',layout=widgets.Layout(width='100px'))
+		json_w.on_click(self.json_h) # HANDLER
+		clear_w=widgets.Button( description='clear',layout=widgets.Layout(width='100px'))
 		clear_w.on_click(self.clear_h) # HANDLER
 		#fmtBox_w=widgets.HBox([png_w,html_w,csv2pd_w,csv2pivot_w])
-		fmtBox_w=widgets.HBox([png_w,csv2pd_w,csv2pivot_w,clear_w])
+		fmtBox_w=widgets.HBox([png_w,csv2pd_w,csv2pivot_w,json_w,clear_w])
 		self.script_w=widgets.Textarea(rows=3,layout=widgets.Layout(width='99%'))
 		scriptBox_w=widgets.VBox([fmtBox_w,self.script_w])
 

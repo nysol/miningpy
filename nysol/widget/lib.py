@@ -147,6 +147,19 @@ def iFileCheck(iFile,msg):
 		return False
 	return True
 
+def iPathCheck(iPath,msg):
+	if type(iPath)==str:
+		iPaths=[iPath]
+	elif type(iPath)==list or type(iPath)==tuple:
+		iPaths=iPath
+	else:
+		return False
+	for path in iPaths:
+		if not os.path.isdir(path):
+			msg.value = "##ERROR: ディレクトリでない入力が指定されています: %s"%(path)
+			return False
+	return True
+	
 def oPathCheck(oPath,msg):
 	if oPath is None:
 		msg.value = "##ERROR: 出力パスが指定されていません。"
