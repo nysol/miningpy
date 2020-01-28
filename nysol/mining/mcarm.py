@@ -7,7 +7,7 @@ import copy
 import nysol.mining.mspade as mm
 from nysol.util.mmkdir import mkDir
 from nysol.mining.rtree import rtree
-from nysol.mining.dtree import dtree 
+from nysol.mining.ctree import ctree 
 from nysol.mining.dataset import dataset 
 
 import warnings
@@ -25,12 +25,12 @@ class AlphabetIndex(object):
 		#self.num2alpha=[] # num=>alphabet
 		#self.alpha2num={} # alphabet=>num
 		self.spaces=[] # 探索空間
-		#self.model=dtree(config["dTree"])
+		#self.model=ctree(config["dTree"])
 
 		if config["dataset"]["iFile"]["yType"]=="r":
 			self.model=rtree(config["rTree"])
 		elif config["dataset"]["iFile"]["yType"]=="d":
-			self.model=dtree(config["dTree"])
+			self.model=ctree(config["dTree"])
 		else:
 			raise ValueError("unknown yType:%s"%(config["dataset"]["iFile"]["yType"]))
 
@@ -456,13 +456,13 @@ class mcarm(object):
 		ai.predict(ai.optimal_space,ai.min_impurity_decrease)
 		##ai.optimal_model.vizModel("graph.pdf",None)
 		if len(ds.ovlist) != 0:
-			ai.optimal_model.vizModel(odir+"/dtree_opt.pdf",ai.optimal_features,ds.ovlist)
-			ai.model.vizModel(odir+"/dtree.pdf",ai.optimal_features,ds.ovlist)
+			ai.optimal_model.vizModel(odir+"/ctree_opt.pdf",ai.optimal_features,ds.ovlist)
+			ai.model.vizModel(odir+"/ctree.pdf",ai.optimal_features,ds.ovlist)
 		else:
-			ai.optimal_model.vizModel(odir+"/dtree.pdf",ai.optimal_features)
+			ai.optimal_model.vizModel(odir+"/ctree.pdf",ai.optimal_features)
 
 
-"""
+#"""
 ##########
 # entry point
 argv=sys.argv
@@ -509,11 +509,11 @@ mkDir(odir)
 ai.predict(ai.optimal_space,ai.min_impurity_decrease)
 ##ai.optimal_model.vizModel("graph.pdf",None)
 if len(ds.ovlist) != 0:
-	ai.optimal_model.vizModel(odir+"/dtree_opt.pdf",ai.optimal_features,ds.ovlist)
-	ai.model.vizModel(odir+"/dtree.pdf",ai.optimal_features,ds.ovlist)
+	ai.optimal_model.vizModel(odir+"/ctree_opt.pdf",ai.optimal_features,ds.ovlist)
+	ai.model.vizModel(odir+"/ctree.pdf",ai.optimal_features,ds.ovlist)
 else:
-	ai.optimal_model.vizModel(odir+"/dtree.pdf",ai.optimal_features)
+	ai.optimal_model.vizModel(odir+"/ctree.pdf",ai.optimal_features)
 
 
 exit()
-"""
+#"""

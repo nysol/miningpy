@@ -103,7 +103,7 @@ print("#### END")
 		pbox=[]
 
 		# 入力ファイル名とファイル内容
-		self.iName_w =widgets.Text(description="入力ファイル",value="",layout=widgets.Layout(width='99%'),disabled=False)
+		self.iName_w =widgets.Text(description="入力ファイル",value="",layout=widgets.Layout(width='99%'),disabled=True)
 		self.iText_w =widgets.Textarea(value="",rows=5,layout=widgets.Layout(width='99%'),disabled=True)
 		pbox.append(self.iName_w)
 		pbox.append(self.iText_w)

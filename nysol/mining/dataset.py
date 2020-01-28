@@ -9,6 +9,7 @@ from nysol.util.mtemp import Mtemp
 import nysol.util.mheader as mheader
 import numpy as np
 import pandas as pd
+import time
 
 def show(df):
 	className=df.__class__.__name__
@@ -83,13 +84,18 @@ def mkTable(config,source):
 	if config.__class__.__name__=="str":
 		config=load_config(config)
 
-	if (not "type" in config) or (config["type"]!="table"):
+	if ("type" not in config) or (config["type"]!="table"):
 		raise BaseException("##ERROR: bad config, seems not for table class")
 
-	names=config["names"]
-	if source.__class__.__name__=="str":
-		dat = pd.read_csv(source,dtype=str)
-		csv_names=dat.columns.to_list()
+	#config["vars"]=[
+	#		["Sex"     ,"dummy",{"drop_first":True,"dummy_na":False,"dtype":float}],
+	#		["Length"  ,"numeric",{}],
+	#		["Diameter","numeric",{}],
+	#              :
+	names=[var[0] for var in config["vars"]]
+	if type(source)==str:
+		dat = pd.read_csv(source,dtype=str) # 一旦strとして読み込み
+		csv_names=dat.columns.to_list() # 項目名に%が含まれていればそれ以降削除
 		csv_names=[re.sub("%.*$","",v) for v in csv_names] ## mcmd csv出力対策: %nなどの除去
 		dat.columns=csv_names
 		# check names
@@ -98,12 +104,59 @@ def mkTable(config,source):
 				raise BaseException("##ERROR: field name not found in csv data: %s"%name)
 		data=dat.loc[:,names]
 
-	elif source.__class__.__name__ in ["list","ndarray"]:
+	elif type(source) in [list,np.ndarray]:
 		if len(source)==0:
 			raise BaseException("##ERROR: empty data found in list data source")
 		data=pd.DataFrame(source, columns=names)
 
-	convs=config["convs"]
+	# 型毎に変数をまとめる(pandasで一つずつ変数を変換していては遅いため)
+	eachConv={}
+	for i,var in enumerate(config["vars"]):
+		if len(var)!=3:
+			raise BaseException("##ERROR: sintax error in config['vars'] : %s"%(var))
+		name =var[0]
+		type_=var[1] # numeric,category,dummy,...
+		param=var[2] # {"drop_first":True,...}
+		#print("var",i,var)
+		if type_ not in ["id","numeric","category","class","dummy"]:
+			raise BaseException("##ERROR: unknown variable type : (%s,%s)"%(name,type_))
+		if type_ not in eachConv:
+			eachConv[type_]=[]
+		eachConv[type_].append([name,param])
+
+	for key,vars_ in eachConv.items():
+		#print("kv",key,vars_)
+		if key=="id":
+			for var in vars_:
+				name=var[0]
+				data=data.set_index(name)
+				break # 複数指定していても先頭のみ対応、後は無視
+		elif key=="numeric":
+			dtypes={}
+			for var in vars_:
+				name=var[0]
+				dtypes[name]=float
+			data=data.astype(dtypes)
+		elif key=="category":
+			dtypes={}
+			for var in vars_:
+				name=var[0]
+				dtypes[name]="category"
+			data=data.astype(dtypes)
+		elif key=="class":
+			dtypes={}
+			for var in vars_:
+				name=var[0]
+				dtypes[name]="category"
+			data=data.astype(dtypes)
+		if key=="dummy":
+			#print("var",var)
+			for var in vars_: # dummyは1項目ずつ
+				name=var[0]
+				param=var[1]
+				data=pd.get_dummies(data,columns=[name],**param)
+
+	'''
 	for i,conv in enumerate(convs):
 		# configのconv文字列の内容を型に応じたメソッド名を変更してそのまま実行する
 		if re.match(r"^id\(",conv):
@@ -120,6 +173,9 @@ def mkTable(config,source):
 			data=eval(conv.replace("as(","conv_as(data,'%s',"%(names[i])))
 		else: # no conversion (as("object")含む)
 			pass
+	'''
+	#print("time:",i,len(convs),time.time()-st)
+	#print(data)
 	return data
 
 def tra2tbl(tra,idName,itemName,dtype="float16"):

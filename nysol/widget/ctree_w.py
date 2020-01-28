@@ -104,7 +104,7 @@ print("#### END")
 		pbox=[]
 
 		# 入力ファイル名とファイル内容
-		self.fName_w =widgets.Text(description="入力ファイル",value="",layout=widgets.Layout(width='99%'),disabled=False)
+		self.fName_w =widgets.Text(description="入力ファイル",value="",layout=widgets.Layout(width='99%'),disabled=True)
 		self.fText_w =widgets.Textarea(value="",rows=5,layout=widgets.Layout(width='99%'),disabled=True)
 		pbox.append(self.fName_w)
 		pbox.append(self.fText_w)

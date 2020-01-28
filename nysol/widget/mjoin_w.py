@@ -121,11 +121,11 @@ print("#### END")
 		pbox=[]
 
 		# ファイル名とファイル内容
-		self.iName_w =widgets.Text(description="入力ファイル",value="",layout=Layout(width='100%'),disabled=False)
+		self.iName_w =widgets.Text(description="入力ファイル",value="",layout=Layout(width='100%'),disabled=True)
 		self.iText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
 		pbox.append(self.iName_w)
 		pbox.append(self.iText_w)
-		self.mName_w =widgets.Text(description="参照ファイル",value="",layout=Layout(width='100%'),disabled=False)
+		self.mName_w =widgets.Text(description="参照ファイル",value="",layout=Layout(width='100%'),disabled=True)
 		self.mText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='100%'),disabled=True)
 		pbox.append(self.mName_w)
 		pbox.append(self.mText_w)

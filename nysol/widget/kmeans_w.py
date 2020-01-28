@@ -127,7 +127,7 @@ print("#### END")
 		pbox=[]
 
 		# ファイル名とファイル内容
-		self.iName_w =widgets.Text(description="トランザクション",value="",layout=Layout(width='99%'),disabled=False)
+		self.iName_w =widgets.Text(description="トランザクション",value="",layout=Layout(width='99%'),disabled=True)
 		self.iText_w =widgets.Textarea(value="",rows=5,layout=Layout(width='99%'),disabled=True)
 		pbox.append(self.iName_w)
 		pbox.append(self.iText_w)
