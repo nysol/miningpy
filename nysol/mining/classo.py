@@ -6,6 +6,7 @@ import numpy as np
 import pickle
 import json
 import csv
+import pandas as pd
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LassoCV,Lasso
@@ -23,34 +24,49 @@ import sklearn.metrics as metrics
 from nysol.mining.cPredict import cPredict
 
 class classo(object):
-	def __init__(self,x_df,y_df):
+	def __init__(self,x_df,y_df,standardize=False):
+		print("##MSG: initializing model ...")
+
 		if len(y_df.columns)!=1:
 			raise BaseException("##ERROR: DataFrame of y variable must be one column data")
+		# nullデータチェック
+		for i,isnull in enumerate(x_df.isnull().any()):
+			if isnull:
+				raise BaseException("##ERROR: null data found in field '%s'"%(x_df.columns[i]))
+		for i,isnull in enumerate(y_df.isnull().any()):
+			if isnull:
+				raise BaseException("##ERROR: null data found in field '%s'"%(y_df.columns[i]))
 
-		self.yName=y_df.columns[0]
-		self.labels=y_df[self.yName].cat.categories.to_list()
+		self.y_name=y_df.columns[0]
+		self.labels=y_df[self.y_name].cat.categories.to_list()
 		self.y=y_df.values.reshape((-1,))
 
-		self.xNames=x_df.columns.to_list()
+		self.x_names=x_df.columns.to_list()
 		self.x=x_df.values.reshape((-1,len(x_df.columns)))
 
-		self.mse_chart=None
-		self.coef_chart=None
+		# standardize x variables
+		if standardize:
+			self.scaler = StandardScaler()
+			self.scaler.fit(self.x)
+			self.x_trans=self.scaler.transform(self.x)
+		else:
+			self.scaler = None
+			self.x_trans=self.x
 
-	def build(self,penalty="l1",cv=10,Cs=40):
-		self.penalty=penalty
+		self.mse_chart = None
+		self.coef_chart= None
+
+	def build(self,l1_ratio=1.0,cv=10,Cs=40,max_iter=100):
+		print("##MSG: building model ...")
+		self.penalty="elasticnet"
+		self.l1_ratio=l1_ratio
 		self.cv=cv
 		self.Cs=Cs
-
-		# xの標準化
-		self.scaler = StandardScaler()
-		self.scaler.fit(self.x)
-		x_trans=self.scaler.transform(self.x)
-
+		self.max_iter=max_iter
 		# https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegressionCV.html#sklearn.linear_model.LogisticRegressionCV
-		self.model = LogisticRegressionCV(penalty=self.penalty,cv=self.cv,Cs=self.Cs,solver="saga",random_state=0, multi_class='multinomial')
-		self.model.fit(x_trans, self.y)
-		self.score=self.model.score(x_trans, self.y)
+		self.model = LogisticRegressionCV(penalty=self.penalty,l1_ratios=[self.l1_ratio],cv=self.cv,Cs=self.Cs,solver="saga",random_state=0, max_iter=self.max_iter,multi_class='multinomial')
+		self.model.fit(self.x_trans, self.y)
+		self.score=self.model.score(self.x_trans, self.y)
 		#print(self.model.coef_)
 		#print(self.model.intercept_)
 		#print(self.model.predict(self.x_trans))
@@ -65,43 +81,58 @@ class classo(object):
 			cnos=range(len(self.labels))
 		for c in cnos:
 			self.coef.append([str(self.labels[c]),"intercept",float(self.model.intercept_[c])])
-			for i in range(len(self.xNames)):
-				self.coef.append([str(self.labels[c]),self.xNames[i],float(self.model.coef_[c][i])])
+			for i in range(len(self.x_names)):
+				self.coef.append([str(self.labels[c]),self.x_names[i],float(self.model.coef_[c][i])])
 
 		# 最適λ
 		self.opt_lambda=[]
 		self.opt_lambda.append(["class","lambda"])
 		for c in cnos:
-			self.opt_lambda.append([str(self.labels[c]),float(self.model.C_[c])])
+			#self.opt_lambda.append([str(self.labels[c]),float(self.model.C_[c])])
+			self.opt_lambda.append([self.labels[c],float(self.model.C_[c])])
+
+		self.visualize()
 
 	def predict(self,x_df):
-		pred=cPredict()
+		print("##MSG: predicting ...")
 		x=x_df.values.reshape((-1,len(x_df.columns)))
-		x_trans=self.scaler.transform(x)
+		if self.scaler is None:
+			x_trans=x
+		else:
+			x_trans=self.scaler.transform(x)
 
-		pred.y_pred=self.model.predict(x_trans)
-		pred.y_prob=self.model.predict_proba(x_trans)
-		pred.probClassOrder=self.model.classes_ # y_probの出力順
-		pred.id=x_df.index.to_list()
-		pred.labels=self.labels
+		y_pred=self.model.predict(x_trans) # [0 0 0 0 0 0 0 ...] # pred class表
+		y_prob=self.model.predict_proba(x_trans) # sample * class prob 表
+		# [[9.86925146e-01 1.30748490e-02 5.13506829e-09]
+		#  [9.81685740e-01 1.83142489e-02 1.10697584e-08]...
 
-		''' # predict_probabの検算
-		d=x_trans[0]
-		c=self.model.coef_[0]
-		b=self.model.intercept_[0]
-		a=np.sum(d*c)+b
-		#a=np.dot(d,c.T)+b
-		aa=np.c_[-a, a]
-		print(scipy.special.softmax(aa))
-		'''
+		# y_prob等のclassの出力順
+		orderedLabels=self.model.classes_
+
+		# id込みのDataFrameに変換
+		y_pred=pd.DataFrame(y_pred)
+		y_pred.index=x_df.index.to_list()
+		y_pred.columns=["y_predicted"]
+
+		y_prob=pd.DataFrame(y_prob)
+		y_prob.index=x_df.index.to_list()
+		names=[]
+		for c in orderedLabels:
+			names.append("prob_"+str(c))
+		y_prob.columns=names
+
+		pred=cPredict(y_pred,y_prob,orderedLabels)
+
 		return pred
 
-	def load(iFile):
-		with open(iFile, 'rb') as fpr:
+	def load(modelF):
+		print("##MSG: loading model ...")
+		with open(modelF, 'rb') as fpr:
 			model = pickle.load(fpr)
 		return model
 
 	def save(self,oPath):
+		print("##MSG: saving model ...")
 		os.makedirs(oPath,exist_ok=True)
 		oFile="%s/model.sav"%(oPath)
 		with open(oFile, 'wb') as fpw:
@@ -153,8 +184,10 @@ class classo(object):
 		# coefficient path chart
 		coefs=[]
 		for c in reversed(self.model.Cs_):
-			model = LogisticRegression(penalty=self.penalty,C=c, solver="saga",random_state=0, multi_class='multinomial')
-			model.fit(self.scaler.transform(self.x), self.y)
+			model = LogisticRegression(penalty=self.penalty,l1_ratio=self.l1_ratio,C=c, solver="saga",random_state=0, max_iter=self.max_iter, multi_class='multinomial')
+
+			#model.fit(self.scaler.transform(self.x), self.y)
+			model.fit(self.x, self.y)
 			coefs.append(model.coef_[0])
 		#print("coef.shape",coefs[0].shape)
 		#print("alpha.shape",m_log_alphas.shape)
@@ -172,77 +205,87 @@ class classo(object):
 
 if __name__ == '__main__':
 	import dataset as ds
+	def senario1():
+		config={}
+		config["type"]="table"
+		config["vars"]=[
+			["id","id",{}],
+			["n1","numeric",{}],
+			["n2","numeric",{}],
+			["n3","numeric",{}],
+			["n4","numeric",{}],
+			["d1","dummy",{"dummy_na":True,"drop_first":True,"dtype":float}],
+			["d2","dummy",{}],
+			["d3","dummy",{}],
+			["i1","dummy",{}],
+			["i2","dummy",{}],
+			["class","class",{}]
+		]
+		data=ds.mkTable(config,"./data/crx2.csv")
+		data=data.dropna()
+		y=ds.cut(data,["class"])
+		x=ds.cut(data,["class"],reverse=True)
+		ds.show(x)
+		ds.show(y)
 
-	#'''
-	configFile="./config/crx2.dsc"
-	tbl=ds.mkTable(configFile,"./data/crx2.csv")
-	#ds.show(tbl)
+		model=classo(x,y)
+		model.build()
+		model.save("xxclasso_model_crx")
 
-	configFile="config/crx_tra.dsc"
-	tra=ds.mkTable(configFile,"data/crx_tra1.csv")
-	#ds.show(tra)
-	tratbl=ds.tra2tbl(tra,"id","item")
-	#ds.show(tratbl)
+		pred=model.predict(x)
+		pred.evaluate(y)
+		#print(pred.y_pred)
+		#print(pred.y_true)
+		#print(pred.y)
+		#print(pred.stats)
+		#print(pred.charts)
+		#pred.charts["true_pred_scatter"].savefig("xxa.png")
+		#pred.charts["roc_chart"]
+		#pred.charts["confusion_matrix_plot"]
+		#plt.show()
+		pred.save("xxclasso_pred_crx")
 
-	crx=ds.join([tbl,tratbl])
-	#ds.show(crx)
+		model=classo.load("xxclasso_model_crx/model.sav")
+		pred=model.predict(x)
+		pred.evaluate(y)
+		pred.save("xxclasso_pred_crx2")
 
-	crx=crx.dropna()
-	crx_y=ds.cut(crx,["class"])
-	crx_x=ds.cut(crx,["class"],reverse=True)
+	def iris():
+		from sklearn.datasets import load_iris
+		iris = load_iris()
+		config={}
+		config["type"]="table"
+		config["vars"]=[
+			["sepal length","numeric",{}],
+			["sepal width" ,"numeric",{}],
+			["petal lengt" ,"numeric",{}],
+			["petal width" ,"numeric",{}]
+		]
+		x=ds.mkTable(config,iris.data)
 
-	model=classo(crx_x,crx_y)
-	model.build()
-	#print(model.coef)
-	#print(model.opt_lambda)
-	model.visualize()
-	model.save("xxclasso_model_crx")
+		config={}
+		config["type"]="table"
+		config["vars"]=[
+			["species","category",{}]
+		]
+		y=ds.mkTable(config,iris.target)
+		ds.show(x)
+		ds.show(y)
 
-	pred=model.predict(crx_x)
-	pred.evaluate(crx_y)
-	pred.save("xxclasso_pred_crx")
-	#print(pred.y_pred)
-	#print(pred.y_prob)
+		model=classo(x,y)
+		# build(self,l1_ratio=1.0,cv=10,Cs=40,max_iter=100)
+		model.build(max_iter=10000)
+		model.save("xxclasso_model_iris")
 
-	#'''
-	from sklearn.datasets import load_iris
-	iris = load_iris()
-	print(iris.data)
-	print(iris.target)
+		pred=model.predict(x)
+		pred.evaluate(y)
+		pred.save("xxclasso_pred_iris")
 
-	config={}
-	config["type"]="table"
-	config["names"]=["sepal length","sepal width","petal length","petal width"]
-	config["convs"]=["numeric()","numeric()","numeric()","numeric()"]
-	iris_x=ds.mkTable(config,iris.data)
-	ds.show(iris_x)
+		model=classo.load("xxclasso_model_iris/model.sav")
+		pred=model.predict(x)
+		pred.evaluate(y)
+		pred.save("xxclasso_pred_iris2")
 
-	config={}
-	config["type"]="table"
-	config["names"]=["species"]
-	config["convs"]=["category()"]
-	iris_y=ds.mkTable(config,iris.target)
-	ds.show(iris_y)
+	senario1()
+	#iris()
 
-	model=classo(iris_x,iris_y)
-
-	#print(tbl.__class__.__name__)
-	model.build()
-	print(model.coef)
-	print(model.opt_lambda)
-	model.visualize()
-	model.save("xxclasso_model_iris")
-
-	pred=model.predict(iris_x) 
-	#print(pred.y_prob[0],pred.y_pred[0])
-	pred.evaluate(iris_y)
-	pred.save("xxclasso_pred_iris")
-	#print(pred.y_pred)
-	#print(pred.y_prob)
-
-	model=None
-	model=classo.load("xxclasso_model_iris/model.sav")
-	pred=model.predict(iris_x)
-	pred.save("xxclasso_pred_iris2")
-	print(model.labels)
-	#'''

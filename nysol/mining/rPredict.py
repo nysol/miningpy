@@ -32,8 +32,8 @@ class rPredict(object):
 		self.y.columns=["y_true","y_predicted"]
 		self.y=self.y.reset_index()
 
-		# report(各種スコア)の作成と保存
-		self.stats={} # jsonで保存できる結果
+		# 各種スコアの作成と保存
+		self.stats={}
 		self.stats["mean_squared_error"]=metrics.mean_squared_error(self.y_true,self.y_pred)
 		self.stats["mean_absolute_error"]=metrics.mean_absolute_error(self.y_true,self.y_pred)
 		self.stats["median_absolute_error"]=metrics.median_absolute_error(self.y_true,self.y_pred)

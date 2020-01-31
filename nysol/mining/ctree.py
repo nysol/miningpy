@@ -9,6 +9,7 @@ import numpy as np
 import pickle
 import json
 import re
+import pandas as pd
 
 from sklearn import tree
 from sklearn.model_selection import KFold
@@ -23,13 +24,12 @@ from skopt import gp_minimize
 from nysol.mining.cPredict import cPredict
 
 class ctree(object):
-	def __init__(self,x_df,y_df,config):
+	def __init__(self,x_df,y_df):
 		if len(y_df.columns)!=1:
 			raise BaseException("##ERROR: DataFrame of y variable must be one column data")
 
-		self.config=config
-		if "min_samples_leaf" not in config:
-			config["min_samples_leaf"]=0.0
+		#if "min_samples_leaf" not in config:
+		#	config["min_samples_leaf"]=0.0
 
 		self.yName=y_df.columns[0]
 		classDist=y_df[self.yName].value_counts().to_dict()
@@ -54,7 +54,7 @@ class ctree(object):
 		self.y_minClassSize=min(classDist.values())
 
 	def objectiveFunction(self,spaces):
-		params=self.config
+		params=self.params
 		params["min_samples_leaf"]=spaces[0]
 		clf=tree.DecisionTreeClassifier(**params)
 
@@ -66,9 +66,13 @@ class ctree(object):
 		print("space",spaces[0],score)
 		return score
 
-	def build(self):
-		params=self.config
+	def build(self,params):
+		print("##MSG: building model ...")
+		#params=self.config
 		#print("params",params)
+		if "min_samples_leaf" not in params:
+			params["min_samples_leaf"]=0.0
+		self.params=params
 
 		self.cv_minFun=None
 		self.cv_minX=None
@@ -76,14 +80,14 @@ class ctree(object):
 		#print(params["min_samples_leaf"])
 		#if self.y_minClassSize>=10 and not "min_samples_leaf" in params and params["min_samples_leaf"]==0.0:
 		if self.y_minClassSize>=10 and params["min_samples_leaf"]==0.0:
-			if False:
-				grid_param ={'min_samples_leaf':[i/100 for i in range(1,50,5)]}
+			if True:
+				grid_param ={'min_samples_leaf':[i/100 for i in range(1,50,1)]}
 
 				clf=tree.DecisionTreeClassifier(**params)
-				grid_search = GridSearchCV(clf, param_grid=grid_param, cv=10, scoring='neg_mean_squared_error',verbose = 2)
+				grid_search = GridSearchCV(clf, param_grid=grid_param, cv=10, scoring='neg_mean_squared_error',verbose = 0)
 				grid_search.fit(self.x,self.y01)
 				params["min_samples_leaf"]=grid_search.best_params_['min_samples_leaf']
-				print("opt","%f,%f"%(grid_search.best_params_['min_samples_leaf'],grid_search.best_score_))
+				#print("opt","%f,%f"%(grid_search.best_params_['min_samples_leaf'],grid_search.best_score_))
 			else:
 				# ベイズ最適化による最適min_samples_leafの探索(CVによる推定)
 				self.skFold=StratifiedKFold(n_splits=10,random_state=11)
@@ -107,7 +111,35 @@ class ctree(object):
 		self.score=self.model.score(self.x, self.y)
 		#print("m accuracy",self.score)
 
+		self.visualize()
+
 	def predict(self,x_df):
+		x=x_df.values.reshape((-1,len(x_df.columns)))
+
+		y_pred=self.model.predict(x) # [0 0 0 0 0 0 0 ...] # pred class表
+		y_prob=self.model.predict_proba(x) # sample * class prob 表
+		# [[9.86925146e-01 1.30748490e-02 5.13506829e-09]
+		#  [9.81685740e-01 1.83142489e-02 1.10697584e-08]...
+
+		# y_prob等のclassの出力順
+		orderedLabels=self.model.classes_
+
+		# id込みのDataFrameに変換
+		y_pred=pd.DataFrame(y_pred)
+		y_pred.index=x_df.index.to_list()
+		y_pred.columns=["y_predicted"]
+
+		y_prob=pd.DataFrame(y_prob)
+		y_prob.index=x_df.index.to_list()
+		names=[]
+		for c in orderedLabels:
+			names.append("prob_"+str(c))
+		y_prob.columns=names
+
+		pred=cPredict(y_pred,y_prob,orderedLabels)
+
+		return pred
+
 		pred=cPredict()
 		x=x_df.values.reshape((-1,len(x_df.columns)))
 
@@ -183,6 +215,95 @@ class ctree(object):
 		self.tree_text=tree.export_text(self.model,feature_names=self.xNames,show_weights=True)
 
 if __name__ == '__main__':
+	import dataset as ds
+	def senario1():
+		config={}
+		config["type"]="table"
+		config["vars"]=[
+			["id","id",{}],
+			["n1","numeric",{}],
+			["n2","numeric",{}],
+			["n3","numeric",{}],
+			["n4","numeric",{}],
+			["d1","dummy",{"dummy_na":True,"drop_first":True,"dtype":float}],
+			["d2","dummy",{}],
+			["d3","dummy",{}],
+			["i1","dummy",{}],
+			["i2","dummy",{}],
+			["class","class",{}]
+		]
+		data=ds.mkTable(config,"./data/crx2.csv")
+		data=data.dropna()
+		y=ds.cut(data,["class"])
+		x=ds.cut(data,["class"],reverse=True)
+		ds.show(x)
+		ds.show(y)
+
+		model=ctree(x,y)
+		params={"max_depth": 10}
+		model.build(params)
+		model.save("xxctree_model_crx")
+
+		pred=model.predict(x)
+		pred.evaluate(y)
+		#print(pred.y_pred)
+		#print(pred.y_true)
+		#print(pred.y)
+		#print(pred.stats)
+		#print(pred.charts)
+		#pred.charts["true_pred_scatter"].savefig("xxa.png")
+		#pred.charts["roc_chart"]
+		#pred.charts["confusion_matrix_plot"]
+		#plt.show()
+		pred.save("xxctree_pred_crx")
+
+		model=ctree.load("xxctree_model_crx/model.sav")
+		pred=model.predict(x)
+		pred.evaluate(y)
+		pred.save("xxctree_pred_crx2")
+
+	def iris():
+		from sklearn.datasets import load_iris
+		iris = load_iris()
+		config={}
+		config["type"]="table"
+		config["vars"]=[
+			["sepal length","numeric",{}],
+			["sepal width" ,"numeric",{}],
+			["petal lengt" ,"numeric",{}],
+			["petal width" ,"numeric",{}]
+		]
+		x=ds.mkTable(config,iris.data)
+
+		config={}
+		config["type"]="table"
+		config["vars"]=[
+			["species","category",{}]
+		]
+		y=ds.mkTable(config,iris.target)
+		ds.show(x)
+		ds.show(y)
+
+		model=ctree(x,y)
+		# build(self,l1_ratio=1.0,cv=10,Cs=40,max_iter=100)
+		model.build(max_iter=10000)
+		model.save("xxctree_model_iris")
+
+		pred=model.predict(x)
+		pred.evaluate(y)
+		pred.save("xxctree_pred_iris")
+
+		model=ctree.load("xxctree_model_iris/model.sav")
+		pred=model.predict(x)
+		pred.evaluate(y)
+		pred.save("xxctree_pred_iris2")
+
+	senario1()
+	#iris()
+	exit()
+
+
+
 	import pandas as pd
 	from nysol.mining.csv2df import csv2df
 	iFile="/Users/hamuro/nysol/miningpy/nysol/mining/data/crx2.csv"
@@ -193,7 +314,7 @@ if __name__ == '__main__':
 	xNames.remove(yName)
 	crx_y=pd.DataFrame(ds.loc[:,yName])
 	crx_x=ds.loc[:,xNames]
-	config={"max_depth": 10}
+	params={"max_depth": 10}
 	model=ctree(crx_x,crx_y,config)
 	model.build()
 	print("cv_minFunc",model.cv_minFun)
@@ -233,11 +354,10 @@ if __name__ == '__main__':
 	iris_y=ds.mkTable(config,iris.target)
 	ds.show(iris_y)
 
-	config={"max_depth": 10}
-	model=ctree(iris_x,iris_y,config)
+	model=ctree(iris_x,iris_y)
 
 	#print(tbl.__class__.__name__)
-	model.build()
+	model.build(params)
 	model.visualize()
 	model.save("xxctree_model_iris")
 

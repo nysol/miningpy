@@ -12,8 +12,8 @@ import pandas as pd
 import time
 
 def show(df):
-	className=df.__class__.__name__
-	if className!="DataFrame":
+	className=type(df)
+	if className!=pd.core.frame.DataFrame:
 		raise BaseException("##ERROR: unknown data type: %s (line %d)"%(keyword,lineNo))
 
 	print("#####",className)
@@ -81,7 +81,7 @@ def conv_dummy(data,name,drop_first=True,dummy_na=False,dtype=float):
 			drop_first=drop_first, dummy_na=dummy_na, dtype=dtype)
 
 def mkTable(config,source):
-	if config.__class__.__name__=="str":
+	if type(config)==str:
 		config=load_config(config)
 
 	if ("type" not in config) or (config["type"]!="table"):

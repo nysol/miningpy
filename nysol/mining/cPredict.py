@@ -10,13 +10,22 @@ import scipy.stats as stats
 import seaborn as sb
 
 class cPredict(object):
-	def __init__(self):
-		self.x=None
+	def __init___old(self):
 		self.y_true=None
 		self.y_pred=None
 		self.values=None
 		self.charts=None
 
+	def __init__(self,y_pred,y_prob,orderedLabels):
+		self.y_pred=y_pred
+		self.y_prob=y_prob
+		self.orderedLabels=orderedLabels
+		self.y_true=None
+		self.y     =None
+		self.stats =None
+		self.charts=None
+
+	#def plot_confusion_matrix_chart(self,cm):
 	def plot_confusion_matrix(self,cm,output_file):
 		hrate_cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 		vrate_cm = cm.astype('float') / cm.sum(axis=0)[:, np.newaxis]
@@ -31,9 +40,9 @@ class cPredict(object):
 		title+="(total ratio, holizontal raion(color strength), vertical ratio from the top)"
 		plt.title(title)
 		plt.colorbar()
-		tick_marks = np.arange(len(self.labels))
-		plt.xticks(tick_marks, self.labels)#, rotation=45)
-		plt.yticks(tick_marks, self.labels)
+		tick_marks = np.arange(len(self.orderedLabels))
+		plt.xticks(tick_marks, self.orderedLabels)#, rotation=45)
+		plt.yticks(tick_marks, self.orderedLabels)
 
 		thresh = cm.max() / 2.
 		for i in range(cm.shape[0]):
@@ -53,43 +62,41 @@ class cPredict(object):
 		plt.xlabel('Predicted class')
 		return fig
 
-	def evaluate(self,y_pd):
-		self.y_true=y_pd.values.reshape((-1,))
+	def evaluate(self,y_true):
+		self.y_true=y_true.copy()
+		self.y_true.columns=["y_true"]
 
-		if self.y_pred is None or self.y_prob is None:
-			print("##WARNING not predicted yet")
-			return
+		# y_true,y_pred,y_probの結合
+		self.y=y_true.join(self.y_pred)
+		self.y=self.y.join(self.y_prob)
+		self.y=self.y.reset_index()
 
-		values={} # jsonで保存できる結果
+		stats={} # jsonで保存できる結果
 		charts={} # pltオブジェクト等
 
 		# report(各種スコア)の作成と保存
-		values["labels"]=self.labels
-		values["recall"]=metrics.recall_score(self.y_true,self.y_pred,average=None)
-		values["precision"]=metrics.precision_score(self.y_true,self.y_pred,average=None)
-		values["f1"]=metrics.f1_score(self.y_true,self.y_pred,average=None)
+		stats["labels"]=self.orderedLabels
+		stats["recall"]=metrics.recall_score(self.y_true.values,self.y_pred.values,average=None)
+		stats["precision"]=metrics.precision_score(self.y_true,self.y_pred,average=None)
+		stats["f1"]=metrics.f1_score(self.y_true,self.y_pred,average=None)
 
 		# confusion matrix
 		cm=metrics.confusion_matrix(self.y_true,self.y_pred)
-		values["accuracy"]=np.sum(np.diag(cm)).astype('float')/cm.sum()
-		values["confusion_matrix"]=cm
+		stats["accuracy"]=np.sum(np.diag(cm)).astype('float')/cm.sum()
+		stats["confusion_matrix"]=cm
 
 		# confusion matrixのプロット
-		charts["confusion_matrix_plot"]=self.plot_confusion_matrix(values["confusion_matrix"], "xxcm1.png")
+		charts["confusion_matrix_plot"]=self.plot_confusion_matrix(stats["confusion_matrix"], "xxcm1.png")
 
 		# ROC曲線, AUC
 		fig=plt.figure()
 		#ax = fig.add_subplot()
 		auc=[]
 
-		cls2idx={c:i for i,c in enumerate(self.probClassOrder)}
-		for i,c in enumerate(self.probClassOrder):
-			#print(self.y_true)
-			#print([c])
-			#exit()
-			#print(self.y_prob[:,c])
-			yt=np.array([cls2idx[v] for v in self.y_true],dtype=float)
-			fpr, tpr, thresholds = metrics.roc_curve(yt, self.y_prob[:,i], pos_label=i)
+		cls2idx={c:i for i,c in enumerate(self.orderedLabels)}
+		for i,c in enumerate(self.orderedLabels):
+			yt=np.array([cls2idx[v[0]] for v in self.y_true.values],dtype=float)
+			fpr, tpr, thresholds = metrics.roc_curve(yt, self.y_prob.values[:,i], pos_label=i)
 			auc.append(metrics.auc(fpr, tpr))
 			axs = fig.gca() # 同一グラフに各クラスの結果を重ねる
 			axs.plot(fpr, tpr, label='class=%s, auc=%.3f)'%(c,auc[-1]))
@@ -99,62 +106,35 @@ class cPredict(object):
 		plt.grid(True)
 		plt.title('ROC curve')
 
-		values["auc"]=auc
+		stats["auc"]=auc
 		charts["roc_chart"]=fig
 
-		self.values=values
+		self.stats =stats
 		self.charts=charts
-		#print(self.values.keys())
 
 	def save(self,oPath):
-		if self.y_prob is None:
-			print("##WARNING not predicted yet")
+		if self.y is None:
+			print("##WARNING not evaluated yet. run evaluate.")
 			return
 
 		os.makedirs(oPath,exist_ok=True)
 
-		# サンプル別予測結果,予測確率の出力
-		prd=[]
-		names=["id","y_pred"]
-		for c in self.probClassOrder: #self.labels:
-			#names.append("prob_"+str(self.labels[c]))
-			names.append("prob_"+str(c))
-		if not self.y_true is None:
-			names.append("y_true")
-		prd.append(names)
-
-		cast=str
-		if self.y_pred[0].__class__.__name__[0]=="i":
-			cast=int
-
-		for i in range(len(self.y_pred)):
-			line=[]
-			line.append(self.id[i])
-			line.append(cast(self.y_pred[i]))
-			for p in self.y_prob[i]:
-				line.append(float(p))
-			if not self.y_true is None:
-				line.append(cast(self.y_true[i]))
-			prd.append(line)
-		
-		json_dump = json.dumps(prd, ensure_ascii=False, indent=2)
-		with open("%s/predict.json"%(oPath),"bw") as f:
-			f.write(json_dump.encode("utf-8"))
+		# 予測値-実装値表
+		self.y.to_csv("%s/predict.csv"%(oPath),index=False)
 
 		# 各種統計
-		if self.values is None:
-			return
-		json_dat={}
-		for key in ['labels', 'recall', 'precision', 'f1', 'accuracy', 'confusion_matrix', 'auc']:
-			if key in self.values.keys():
-				if self.values[key].__class__.__name__=="ndarray":
-					json_dat[key]=self.values[key].tolist()
-				else:
-					json_dat[key]=self.values[key]
+		if self.stats is not None:
+			json_dat={}
+			for key in ['labels', 'recall', 'precision', 'f1', 'accuracy', 'confusion_matrix', 'auc']:
+				if key in self.stats.keys():
+					if type(self.stats[key])==np.ndarray:
+						json_dat[key]=self.stats[key].tolist()
+					else:
+						json_dat[key]=self.stats[key]
 
-		json_dump = json.dumps(json_dat, ensure_ascii=False, indent=2)
-		with open("%s/stats.json"%(oPath),"bw") as f:
-			f.write(json_dump.encode("utf-8"))
+			json_dump = json.dumps(json_dat, ensure_ascii=False, indent=2)
+			with open("%s/stats.json"%(oPath),"bw") as f:
+				f.write(json_dump.encode("utf-8"))
 
 		# roc chartとconfusion matrix chart
 		if self.charts is None:
