@@ -230,11 +230,37 @@ if __name__ == '__main__':
 			["Rings"   ,"numeric",{}],
 			["id"      ,"id",{}]
 		]
-		data=ds.mkTable(config,"./data/abalone.csv")
-		y=ds.cut(data,["Rings"])
-		x=ds.cut(data,["Rings"],reverse=True)
-		ds.show(x)
-		ds.show(y)
+
+		# Sex,Length,Diameter,Height,Whole,Shucked,Viscera,Shell,Rings,id
+		# M,0.455,0.365,0.095,0.514,0.2245,0.101,0.15,15,0
+		# M,0.35,0.265,0.09,0.2255,0.0995,0.0485,0.07,7,1
+		dtype={
+			"Sex"     :"category",
+			"Length"  :"float",
+			"Diameter":"float",
+			"Height"  :"float",
+			"Whole"   :"float",
+			"Shucked" :"float",
+			"Viscera" :"float",
+			"Shell"   :"float",
+			"Rings"   :"float",
+			"id"      :"object"
+		}
+		data=pd.read_csv("./data/abalone.csv",dtype=dtype)
+		print(data.dtypes)
+
+		data=pd.get_dummies(data,columns=["Sex"],drop_first=True, dummy_na=True, dtype=int)
+		data=data.set_index("id")
+		data=data.dropna()
+		print(data)
+		print(data.dtypes)
+		print(data.index)
+		#data=ds.mkTable(config,"./data/abalone.csv")
+		y=pd.DataFrame(data["Rings"])
+		x=data.drop(["Rings"],axis=1)
+		#ds.show(x)
+		#ds.show(y)
+		print(type(y))
 
 		model=rlasso(x,y,standardize=True)
 		model.build(max_iter=10000)
@@ -262,6 +288,6 @@ if __name__ == '__main__':
 		pred.save("xxrlasso_pred2_abalone")
 		#print("timea=",time.time()-st)
 	
-	senario1()
-	#abalone()
+	#senario1()
+	abalone()
 

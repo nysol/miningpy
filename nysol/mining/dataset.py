@@ -114,7 +114,7 @@ def mkTable(config,source):
 	for i,var in enumerate(config["vars"]):
 		if len(var)!=3:
 			raise BaseException("##ERROR: sintax error in config['vars'] : %s"%(var))
-		name =var[0]
+		name =var[0] # variable name
 		type_=var[1] # numeric,category,dummy,...
 		param=var[2] # {"drop_first":True,...}
 		#print("var",i,var)
@@ -233,11 +233,15 @@ if __name__ == '__main__':
 """)
 	config={}
 	config["type"]="table"
+	config["vars"]=[
+		["a" ,"as",{'int64'}],
+		["b" ,"as",{'object'}]
+	]
 	config["names"]=["a","b"]
 	config["convs"]=["as('int64')","as('object')"]
 	dat=mkTable(config,"xxa.csv")
 	show(dat)
-
+	exit()
 	configFile="config/crx_tra.dsc"
 	tra=mkTable(configFile,"data/crx_tra1.csv")
 

@@ -24,12 +24,15 @@ from skopt import gp_minimize
 from nysol.mining.cPredict import cPredict
 
 class ctree(object):
-	def __init__(self,x_df,y_df):
+	def __init__(self,x_df=None,y_df=None):
+		if x_df is not None and y_df is not None:
+			self.setDataset(x_df,y_df)
+		self.tree_chart=None
+
+	def setDataset(self,x_df,y_df):
+		print("##MSG: setting dataset ...")
 		if len(y_df.columns)!=1:
 			raise BaseException("##ERROR: DataFrame of y variable must be one column data")
-
-		#if "min_samples_leaf" not in config:
-		#	config["min_samples_leaf"]=0.0
 
 		self.yName=y_df.columns[0]
 		classDist=y_df[self.yName].value_counts().to_dict()
@@ -48,8 +51,6 @@ class ctree(object):
 		self.xNames=x_df.columns.to_list()
 		self.x=x_df.values.reshape((-1,len(x_df.columns)))
 
-		self.tree_chart=None
-
 		# クラスサイズ最小値が10以下ならcross validationできないことを判定させるため=>build()の最初で利用
 		self.y_minClassSize=min(classDist.values())
 
@@ -66,10 +67,10 @@ class ctree(object):
 		print("space",spaces[0],score)
 		return score
 
-	def build(self,params):
+	def build(self,params,opt_param=None,visualizing=True):
 		print("##MSG: building model ...")
-		#params=self.config
-		#print("params",params)
+		if opt_param is not None:
+			params["min_samples_leaf"]=opt_param
 		if "min_samples_leaf" not in params:
 			params["min_samples_leaf"]=0.0
 		self.params=params
@@ -102,16 +103,16 @@ class ctree(object):
 				# 最適枝刈り度のセット
 				params["min_samples_leaf"]=self.cv_minX
 				print("opt","%f,%f"%(self.cv_minX,self.cv_minFun))
-		elif self.y_minClassSize<10:
-			del params["min_samples_leaf"]
+		#elif self.y_minClassSize<10:
+		#	del params["min_samples_leaf"]
+
 		self.model=tree.DecisionTreeClassifier(**params)
 		self.model.fit(self.x, self.y)
-		#print(dir(self.model))
-
 		self.score=self.model.score(self.x, self.y)
-		#print("m accuracy",self.score)
+		self.opt_param=params["min_samples_leaf"]
 
-		self.visualize()
+		if visualizing:
+			self.visualize()
 
 	def predict(self,x_df):
 		x=x_df.values.reshape((-1,len(x_df.columns)))

@@ -22,8 +22,15 @@ from skopt import gp_minimize
 from nysol.mining.rPredict import rPredict
 
 class rtree(object):
-	def __init__(self,x_df,y_df):
-		print("##MSG: initializing model ...")
+	def __init__(self,x_df=None,y_df=None):
+		if x_df is not None and y_df is not None:
+			self.setDataset(x_df,y_df)
+
+		self.tree_chart=None
+		self.opt_hyper_parameter=None
+
+	def setDataset(self,x_df,y_df):
+		print("##MSG: setting dataset ...")
 		if len(y_df.columns)!=1:
 			raise BaseException("##ERROR: DataFrame of y variable must be one column data")
 		# nullデータチェック
@@ -40,10 +47,6 @@ class rtree(object):
 		self.xNames=x_df.columns.to_list()
 		self.x=x_df.values.reshape((-1,len(x_df.columns)))
 
-		self.tree_chart=None
-
-		self.opt_hyper_parameter=None
-
 	def objectiveFunction(self,spaces):
 		params=self.params
 		params["min_samples_leaf"]=spaces[0]
@@ -58,8 +61,10 @@ class rtree(object):
 		#return np.mean(cross_val_score(regr, self.x, self.y, cv=skFold, scoring='neg_mean_absolute_error'))
 		#scores = cross_validation.cross_val_score(regr, X_digits, Y_digits, scoring='mean_squared_error', cv=loo,)
 
-	def build(self,params):
+	def build(self,params,opt_param=None,visualizing=True):
 		print("##MSG: building model ...")
+		if opt_param is not None:
+			params["min_samples_leaf"]=opt_param
 		if "min_samples_leaf" not in params:
 			params["min_samples_leaf"]=0.0
 		self.params=params
@@ -71,10 +76,10 @@ class rtree(object):
 				grid_param ={'min_samples_leaf':[i/100 for i in range(1,50,1)]}
 
 				clf=tree.DecisionTreeRegressor(**params)
-				grid_search = GridSearchCV(clf, param_grid=grid_param, cv=10, scoring='neg_mean_squared_error',verbose = 2)
+				grid_search = GridSearchCV(clf, param_grid=grid_param, cv=10, scoring='neg_mean_squared_error',verbose = 0)
 				grid_search.fit(self.x,self.y)
 				params["min_samples_leaf"]=grid_search.best_params_['min_samples_leaf']
-				print("opt","%f,%f"%(grid_search.best_params_['min_samples_leaf'],grid_search.best_score_))
+				#print("opt","%f,%f"%(grid_search.best_params_['min_samples_leaf'],grid_search.best_score_))
 			else:	
 				#parameters = {'min_impurity_decrease':list(np.arange(0.0,0.1,0.01))}
 				# ベイズ最適化による最適min_impurity_decreaseの探索(CVによる推定)
@@ -92,8 +97,10 @@ class rtree(object):
 		self.model=tree.DecisionTreeRegressor(**params)
 		self.model.fit(self.x, self.y)
 		self.score=self.model.score(self.x, self.y)
+		self.opt_param=params["min_samples_leaf"]
 
-		self.visualize()
+		if visualizing:
+			self.visualize()
 
 	def predict(self,x_df):
 		print("##MSG: predicting ...")
@@ -264,6 +271,6 @@ if __name__ == '__main__':
 		pred.save("xxrtree_pred2_abalone")
 		#print("timea=",time.time()-st)
 	
-	senario1()
-	#abalone()
+	#senario1()
+	abalone()
 

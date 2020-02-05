@@ -809,7 +809,8 @@ class Spade:
 	def writeCSV(self,rules,oParams):
 
 		# 出力
-		if "rule" in oParams:
+		#if "rule" in oParams:
+		if oParams["rule"]:
 			pass
 
 		else:
@@ -928,7 +929,6 @@ class Spade:
 		rules={}
 		self.pid=0
 		for name in lattice.keys():
-
 			pQue=[] # priority queue
 			lattice[name].selTopK(self.oParams,pQue)
 
@@ -946,7 +946,7 @@ class Spade:
 
 if __name__ == '__main__':
 
-	"""
+	#"""
 	data = [
 	[1,10,[3,4]],
 	[1,15,[1,2,3]],
@@ -1037,7 +1037,7 @@ if __name__ == '__main__':
 ]
 
 	datas={"c1":data,"c2":dataOther}
-
+	#datas={"c1":data}
 
 	# 入力パラメータ
 	iParams={
@@ -1049,7 +1049,7 @@ if __name__ == '__main__':
 		#"cFile":None,
 		#"cNames":None,
 		#"iData":datas
-		"iData":None                    # リストによる入力データ(これが指定されたら上記ファイル指定は無視される)
+		"iData":datas                    # リストによる入力データ(これが指定されたら上記ファイル指定は無視される)
 	}
 
 	# 列挙パラメータ
@@ -1082,6 +1082,16 @@ if __name__ == '__main__':
 	spade=Spade(iParams,eParams,oParams)
 	rules=spade.run()
 	print(rules)
+	#{'c1':
+	#	(
+	#   pattern:クラス名,pid,time,item:  {A,B,F} , {D}{B,F}{A}
+	#		[['c1', 0, 0, 'A'], ['c1', 0, 0, 'B'], ['c1', 0, 0, 'F'], ['c1', 1, 0, 'D'], ['c1', 1, 1, 'B'], ['c1', 1, 1, 'F'], ['c1', 1, 2, 'A']],
+	#   stats:クラス名,pid,size,len,occ
+	#		[['c1', 0, 3, 1, 3, 0, 1.0], ['c1', 1, 4, 3, 2, 0, 1.0]],
+	#   occs:クラス名,pid,occNo
+	#		[['c1', 0, '1'], ['c1', 0, '2'], ['c1', 0, '3'], ['c1', 1, '1'], ['c1', 1, '4']]
+	#	)
+	#}
 
-"""
+#"""
 

@@ -3,23 +3,26 @@
 import os
 import sys
 import numpy as np
+import pandas as pd
 import copy
+import csv
+import importlib
 import nysol.mining.mspade as mm
 from nysol.util.mmkdir import mkDir
 from nysol.mining.rtree import rtree
 from nysol.mining.ctree import ctree 
-from nysol.mining.dataset import dataset 
+from nysol.mining.ds import dataset 
 
 import warnings
 warnings.filterwarnings('ignore')
 
 from skopt import gp_minimize
 
-
 class AlphabetIndex(object):
-
-	def __init__(self,config):
+	def __init__(self):
+		#self.config=config
 		self.no=0
+		self.counter=0
 		#self.items=[] # item vectorのvector
 		#self.iSize=[] # indexSize
 		#self.num2alpha=[] # num=>alphabet
@@ -27,19 +30,10 @@ class AlphabetIndex(object):
 		self.spaces=[] # 探索空間
 		#self.model=ctree(config["dTree"])
 
-		if config["dataset"]["iFile"]["yType"]=="r":
-			self.model=rtree(config["rTree"])
-		elif config["dataset"]["iFile"]["yType"]=="d":
-			self.model=ctree(config["dTree"])
-		else:
-			raise ValueError("unknown yType:%s"%(config["dataset"]["iFile"]["yType"]))
-
-
 		self.features=[]
 		self.featuresALL = []
 		self.optimal_score=None
 		self.optimal_model = None
-
 
 	# item変数,itemset変数,sequence変数のindexing探索空間を設定する(spaces)
 	# spcacesはbayes最適化探索空間で使われる一次元ベクトルなので、
@@ -63,8 +57,49 @@ class AlphabetIndex(object):
 			for _ in range(sequence.aSize):
 				self.spaces.append(list(range(sequence.iSize))) # bayes最適化探索空間
 
+	def getAI(self,spaces):
+		ai=[]
+		base_i=0
+		# item変数
+		for obj in self.ds.items:
+			dat=["item",obj.name,[]]
+			for j in range(obj.aSize):
+				dat[2].append([obj.num2alpha[j],spaces[base_i+j]])
+			ai.append(dat)
+		base_i+=obj.aSize
 
+		# itemset変数
+		for obj in self.ds.itemsets:
+			dat=["itemset",obj.name,[]]
+			for j in range(obj.aSize):
+				dat[2].append([obj.num2alpha[j],spaces[base_i+j]])
+			ai.append(dat)
+		base_i+=obj.aSize
 
+		# sequence変数
+		for obj in self.ds.sequences:
+			dat=["isequence",obj.name,[]]
+			for j in range(obj.aSize):
+				dat[2].append([obj.num2alpha[j],spaces[base_i+j]])
+			ai.append(dat)
+		base_i+=obj.aSize
+
+		return ai
+
+	def showSpaces(self,spaces,verbose=3):
+		if verbose==0:
+			return
+		self.counter+=1
+		print("#### Alphabet-Index (iter=#%d)"%self.counter)
+		if verbose==1:
+			return
+
+		ai=self.getAI(spaces)
+		for dat in ai:
+			if verbose==2:
+				print(dat[1],"".join([str(v[1]) for v in dat[2]]))
+			else:
+				print(dat[1],",".join([str(v[0])+"="+str(v[1]) for v in dat[2]]))
 
 	def enumSeqpatterns(self,name,data,eParams,oParams) :
 
@@ -73,9 +108,6 @@ class AlphabetIndex(object):
 		spade=mm.Spade(iParams,eParams,oParams)
 		rules=spade.run()
 		return rules
-
-
-
 
 	# bayes最適化で選ばれたalphabet-indexパラメータspacesに基づいて、
 	# オリジナルのalphabetデータセットをindex化されたデータセットに変換する。
@@ -97,6 +129,7 @@ class AlphabetIndex(object):
 	# D         index化       0   dummy化  1    0    0
   #
 	def indexing(self,spaces):
+		self.showSpaces(spaces)
 
 		# spaces上の現変数の開始位置
 		# 変数,値の2次元空間を、spacesでは1次元空間に設定しているため(いわゆる2次元ポインタ)
@@ -122,7 +155,12 @@ class AlphabetIndex(object):
 
 			base_i+=item.aSize # i番目のitem変数のalphabetサイズ分base_iを飛ばす
 
-
+		# pd.DataFrameに変換
+		for i in range(len(self.itemIndex)):
+			#self.ds.items[i]._summary()
+			columns=[self.ds.items[i].name+"_"+str(j) for j in range(self.ds.items[i].iSize)]
+			self.itemIndex[i]=pd.DataFrame(self.itemIndex[i],index=self.ds.y.index,columns=columns)
+			#print(self.itemIndex[i])
 
 		#### itemset
 		# indexing dataの初期化
@@ -130,6 +168,7 @@ class AlphabetIndex(object):
 		self.itemsetfeatures=[]
 		
 		for i, itemset in enumerate(self.ds.itemsets):
+			#itemset._summary()
 			self.itemsetIndex.append(np.zeros((self.ds.sampleSize,self.ds.itemsets[i].iSize)))
 			for j, items in enumerate(itemset.data):
 				for alpha in items:
@@ -140,100 +179,85 @@ class AlphabetIndex(object):
 			for ii , vv  in enumerate(spaces[base_i:base_i+itemset.aSize]):
 				sfstk[vv].append(itemset.num2alpha[ii])
 			for vvv in sfstk:
-				self.itemsetfeatures.append("%s_(%s)"%(itemset.fldname,",".join(vvv)))
+				self.itemsetfeatures.append("%s_(%s)"%(itemset.item,",".join(vvv)))
 			base_i+=itemset.aSize
 
+		# pd.DataFrameに変換
+		for i in range(len(self.itemsetIndex)):
+			#self.ds.itemsets[i]._summary()
+			columns=[self.ds.itemsets[i].name+"_"+str(j) for j in range(self.ds.itemsets[i].iSize)]
+			self.itemsetIndex[i]=pd.DataFrame(self.itemsetIndex[i],index=self.ds.y.index,columns=columns)
+			#print(self.itemsetIndex[i])
 		
 		#### sequence
-		#id変換表
-		idmap={}
-		for i,x in enumerate(self.ds.id):
-			idmap[x]=i	
-
-		self.indexedSequences=[]
 		self.sequenceIndex = []
-
 		self.sequenceIndexfeatures = []
 
+		#id変換表
+		idmap={x:i for i,x in enumerate(self.ds.id)}
 		for i, sequence in enumerate(self.ds.sequences):
-
+			#sequence._summary()
 			indexedSequence=[]
 			for elements in sequence.data:
+				# print(elements)
+				# ['100', [[97, ['b', 'h']], [194, ['b', 'd']], [256, ['g', 'j']], [353, ['d', 'e']]]]
 				sid=elements[0]
 				indexedElements=[]
 				for itemset in elements[1]:
-					indexedItemset=set()
+					# print(itemset)
+					# [97, ['b', 'h']]
 					time=itemset[0]
+					indexedItemset=set()
 					for alpha in itemset[1]:
 						index=spaces[base_i+sequence.alpha2num[alpha]]
-						indexedItemset.add(str(index)) # mspade数値だとおかしくなる
+						indexedItemset.add(str(index)) # mspade:数値だとおかしくなる
 					indexedElements.append([time,list(indexedItemset)])
 				indexedSequence.append([sid,indexedElements])
 
-			rules = self.enumSeqpatterns(sequence.fldname,indexedSequence,sequence.eParams,sequence.oParams)
+			# enumerate itemset sequence patterns
+			rules = self.enumSeqpatterns(sequence.name,indexedSequence,sequence.eParams,sequence.oParams)
 
-			sfstk =	[ [] for _ in range(sequence.iSize) ]
-			for ii , vv  in enumerate(spaces[base_i:base_i+sequence.aSize]):
-				sfstk[vv].append(sequence.num2alpha[ii])
+			#{
+			# クラス名
+			#	'c1': (
+			# pattern:クラス名,pid,time,item:  {A,B,F} , {D}{B,F}{A}
+			#		[['c1', 0, 0, 'D'], ['c1', 0, 1, 'B'], ['c1', 0, 1, 'F'], ['c1', 0, 2, 'A']],
+			# stats:クラス名,pid,size,len,occ
+			#		[['c1', 0, 4, 3, 2, 0, 1.0]],
+			# 出現:クラス名,pid,recordID
+			#		[['c1', 0, '1'], ['c1', 0, '4']]
+			#	),
+			#	'c2': (
+			#		[['c2', 1, 0, 'B'], ['c2', 1, 0, 'C'], ['c2', 1, 0, 'D'], ['c2', 2, 0, 'D'], ['c2', 2, 1, 'C'], ['c2', 2, 1, 'D'], ['c2', 2, 2, 'D']],
+			#		[['c2', 1, 3, 1, 2, 0, 1.0], ['c2', 2, 4, 3, 2, 0, 1.0]],
+			#		[['c2', 1, '5'], ['c2', 1, '7'], ['c2', 2, '5'], ['c2', 2, '8']]
+			#	)
+			#}
+			#self.ds.sampleSize
+			#print(sequence._summary())
+			columns=[]
+			for rule in rules.values():
+				for stat in rule[1]:
+					clsName=stat[0]
+					patNo  =stat[1]
+					columns.append("%s_%d"%(clsName,patNo))
+			self.sequenceIndexfeatures += columns
 
-			for v in rules.values():
-
-				if len(v[0]) == 0: # これこれでいい？
-					continue
-					
-				# 応急処置
-				pidstk =[]
-
-				pre = None
-				for vv in v[2]: # ['c2', 0, '752']
-					if pre != vv[1]:
-						pidstk.append(vv[1]) 
-					pre = vv[1]
-				
-
-				self.sequenceIndex.append(np.zeros((self.ds.sampleSize,len(pidstk))))
-
-				pre = v[2][0][1]
-				pos=0
-				for vv in v[2]: # ['c2', 0, '752']
-					if pre != vv[1]:
-						pos+=1 
-
-					self.sequenceIndex[-1][idmap[vv[2]]][pos] = -1.0
-					pre = vv[1]
-
-				name = v[0][0][0]
-				pre1 = v[0][0][1]
-				pre2 = v[0][0][2]
-				fstr = ""
-
-				#もちょっと考える
-				skip=False
-				for vv1 in v[0]: 
-
-					if not vv1[1] in pidstk :
-						skip=True
-						continue
-
-					if skip :
-						pre1 = vv1[1]
-						pre2 = vv1[2]
-						skip=False
-						
-			
-					if pre1 != vv1[1]:
-						self.sequenceIndexfeatures.append("%s_%s"%(name,fstr))
-						pre1 = vv1[1]
-						pre2 = vv1[2]
-					elif pre2 != vv1[2]:
-						fstr+=">"
-						pre2 = vv1[2]
-
-					fstr += "[" + ",".join(sfstk[int(vv1[3])]) + "]"
-	
-				self.sequenceIndexfeatures.append("%s_%s"%(name,fstr))
+			rowSize=self.ds.sampleSize
+			colSize=len(columns)
+			data=np.zeros((rowSize,colSize))
+			for rule in rules.values():
+				pats=rule[0]
+				stat=rule[1]
+				occs=rule[2]
+				for occ in occs:
+					row=idmap[occ[2]]
+					col=occ[1]
+					data[row][col] = -1.0
+			self.sequenceIndex.append(pd.DataFrame(data,index=self.ds.y.index,columns=columns))
 
 			base_i+=sequence.aSize
+		#print(self.sequenceIndex)
 
 	# self.xにモデル用データセットのx作成
 	def mkx(self,space):
@@ -243,46 +267,55 @@ class AlphabetIndex(object):
 		self.indexing(space) # self.itemIndex: item,itemsetデータをxでindexingする
 
 		# np.hstackするためのダミー列作成
-		self.x=np.empty((len(self.ds.y),1))
+		#self.x=np.empty((len(self.ds.y),1))
+		self.x = pd.DataFrame(index=self.ds.y.index, columns=[])
 
 		##2 データセットの結合
 		# 数値変数
 		if len(self.ds.nums) !=0 :
-			self.x=np.hstack((self.x,self.ds.nums))
-		for xx in self.ds.iFile_nFlds:
-			self.features.append(xx)
+			#self.x=np.hstack((self.x,self.ds.nums))
+			self.x=self.x.join(self.ds.nums)
+			for xx in self.ds.tblFile_nFlds:
+				self.features.append(xx)
 
 		# category変数
 		for cat in self.ds.cats:
-			self.x=np.hstack((self.x,cat.data))
+			#self.x=np.hstack((self.x,cat.data))
+			self.x=self.x.join(cat.data)
 			for v in cat.num2str:
 				self.features.append("%s_%s"%(cat.name,v))
 
 		# index化されたitem変数
 		for dummy in self.itemIndex:
-			self.x=np.hstack((self.x,dummy))
+			#self.x=np.hstack((self.x,dummy))
+			self.x=self.x.join(dummy)
 
 		for v in self.itemIndexfeatures:
 			self.features.append(v)		
 
-
 		# index化されたitemset変数
 		for dummy in self.itemsetIndex:
-			self.x=np.hstack((self.x,dummy))
+			#self.x=np.hstack((self.x,dummy))
+			self.x=self.x.join(dummy)
 
 		for v in self.itemsetfeatures:
 			self.features.append(v)		
 
+		# index化されたsequence変数
 		for dummy in self.sequenceIndex:
-			self.x=np.hstack((self.x,dummy))
-
+			#self.x=np.hstack((self.x,dummy))
+			self.x=self.x.join(dummy)
 
 		for v in self.sequenceIndexfeatures:
 			self.features.append(v)		
 
 		# join用の列を削除
-		self.x=self.x[:,1:]
+		#self.x=self.x[:,1:]
+		#print(self.x)
 		self.featuresALL.append(self.features)
+		#print(self.featuresALL)
+		#print(list(self.x.columns))
+		#exit()
 
 
 	# bayes最適化目的関数
@@ -291,54 +324,14 @@ class AlphabetIndex(object):
 	##3. モデル構築
 	##4. 最適化スコア(accuracy等)を返す
 	def objFunction(self,space): # xはself.spaces
-
-		self.features = []
-		##1 indexing実行
-		self.indexing(space) # self.itemIndex: item,itemsetデータをxでindexingする
-
-		# np.hstackするためのダミー列作成
-		self.x=np.empty((len(self.ds.y),1))
-
-		##2 データセットの結合
-		# 数値変数
-		if len(self.ds.nums) !=0 :
-			self.x=np.hstack((self.x,self.ds.nums))
-		for xx in self.ds.iFile_nFlds:
-			self.features.append(xx)
-
-		# category変数
-		for cat in self.ds.cats:
-			self.x=np.hstack((self.x,cat.data))
-			for v in cat.num2str:
-				self.features.append("%s_%s"%(cat.name,v))
-
-		# index化されたitem変数
-		for dummy in self.itemIndex:
-			self.x=np.hstack((self.x,dummy))
-
-		for v in self.itemIndexfeatures:
-			self.features.append(v)
-
-		# index化されたitemset変数
-		for dummy in self.itemsetIndex:
-			self.x=np.hstack((self.x,dummy))
-
-		for v in self.itemsetfeatures:
-			self.features.append(v)
-
-		# index化されたsequence変数
-		for dummy in self.sequenceIndex:
-			self.x=np.hstack((self.x,dummy))
-		for v in self.sequenceIndexfeatures:
-			self.features.append(v)		
-
-		# join用ダミー列を削除
-		self.x=self.x[:,1:]
-		self.featuresALL.append(self.features)
+		self.mkx(space)
 
 		##3. モデル構築
+		#print(self.x)
+		#print(self.ds.y)
+		print(self.model)
 		self.model.setDataset(self.x,self.ds.y)
-		self.model.build()
+		self.model.build(self.params,visualizing=False)
 
 		##4. スコアを返す(-1を返すのはbayes最適化が最小化のため)
 		score=self.model.score
@@ -348,172 +341,100 @@ class AlphabetIndex(object):
 			self.optimal_score = score
 			self.optimal_model = copy.deepcopy(self.model)
 			self.optimal_features = copy.deepcopy(self.features)
-			self.min_impurity_decrease = self.model.min_impurity_decrease
+			self.optimal_param = self.model.opt_param
 			
 		return (-1)*score
 
+	def predict(self,space,optimal_param): # xはself.spaces
+		self.mkx(space)
 
-
-	def predict(self,space,min_impurity_decrease): # xはself.spaces
-
-		self.features = []
-		##1 indexing実行
-		self.indexing(space) # self.itemIndex: item,itemsetデータをxでindexingする
-
-		# np.hstackするためのダミー列作成
-		self.x=np.empty((len(self.ds.y),1))
-
-		##2 データセットの結合
-		# 数値変数
-		if len(self.ds.nums) !=0 :
-			self.x=np.hstack((self.x,self.ds.nums))
-		for xx in self.ds.iFile_nFlds:
-			self.features.append(xx)
-
-		# category変数
-		for cat in self.ds.cats:
-			self.x=np.hstack((self.x,cat.data))
-			for v in cat.num2str:
-				self.features.append("%s_%s"%(cat.name,v))
-
-		# index化されたitem変数
-		for dummy in self.itemIndex:
-			self.x=np.hstack((self.x,dummy))
-
-		for v in self.itemIndexfeatures:
-			self.features.append(v)		
-
-
-		# index化されたitemset変数
-		for dummy in self.itemsetIndex:
-			self.x=np.hstack((self.x,dummy))
-
-		for v in self.itemsetfeatures:
-			self.features.append(v)		
-
-
-		# index化されたsequence変数
-		for dummy in self.sequenceIndex:
-			self.x=np.hstack((self.x,dummy))
-		for v in self.sequenceIndexfeatures:
-			self.features.append(v)		
-
-
-		# join用ダミー列を削除
-		self.x=self.x[:,1:]
-
-		self.featuresALL.append(self.features)
-		##3. モデル構築
+		##3. モデル構築 & prediction
 		self.model.setDataset(self.x,self.ds.y)
-		self.model.pbuild(min_impurity_decrease)
-
-		##4. スコアを返す(-1を返すのはbayes最適化が最小化のため)
-		score=self.model.score
-		print("p accuracy",score)
-
+		self.pred=self.optimal_model.predict(self.x)
+		self.pred.evaluate(self.ds.y)
 
 	# bayes最適化実行
-	def optimize(self):
+	def optimize(self,modelName,params,n_calls=20):
+		self.modelName=modelName
+		self.params=params
+		try:
+			self.model=eval(modelName) # rtree()
+		except NameError:
+			raise ValueError("##ERROR: unknown modeling function:%s"%(modelName))
+
 		if len(self.spaces)==0:
 			self.mkx(None)
 			self.model.setDataset(self.x,self.ds.y)
-			self.model.build()
+			self.model.build(params,visualizing=False)
+			self.optimal_param = self.model.opt_param
 			self.optimal_score = self.model.score
 			self.optimal_model = self.model
 			self.optimal_features = self.features
-			self.min_impurity_decrease = self.model.min_impurity_decrease
 			self.optimal_space = self.spaces
+			#print("score",self.model.score)
+			#print("opt_param",self.model.opt_param)
 
 		else:
 			#print(self.spaces)
-			res=gp_minimize(self.objFunction, self.spaces, n_calls=10, random_state=11)
+			res=gp_minimize(self.objFunction, self.spaces, n_calls=n_calls, random_state=11)
 			self.features = self.featuresALL[res.x_iters.index(res.x)]
 			self.optimal_space = res.x
 
-
-
 class mcarm(object):
 	def __checkConfig(self,config):
-		if not os.path.exists(config["dataset"]["iFile"]["name"]):
-			raise Exception("## ERROR: file not found: %s"%config["dataset"]["iFile"]["name"])
+		print(config.dataset)
+		return
+		if not os.path.exists(config["dataset"]["tblFile"]["name"]):
+			raise Exception("## ERROR: file not found: %s"%config["dataset"]["tblFile"]["name"])
 			# iFldsとiSizeのサイズが異なればエラー
 			# indexSizeがアイテムの種類数を超えた時のチェックどうするか？
 
-
-	def __init__(self,conf):
-		self.config = conf
+	def __init__(self,configF):
+		self.configF = configF
+		path=configF.replace("/",".").replace(".py","")
+		self.config=importlib.import_module(path)
 		self.__checkConfig(self.config)
 
+	def build(self,params,n_calls=20):
+		self.params=params
+		self.ds=dataset(self.config.dataset)
+		#self.ds._summary()
+		self.ai=AlphabetIndex()
+		self.ai.setSpaces(self.ds)
+		self.ai.optimize("ctree()",params,n_calls=n_calls)
 
-	def run(self):
-		odir = self.config["oPath"]
-		ds=dataset(self.config["dataset"])
-		ai=AlphabetIndex(self.config)
-		ai.setSpaces(ds)
-		ai.optimize()
-		mkDir(odir)
+	def predict(self):#,x_df):
+		self.ai.predict(self.ai.optimal_space,self.ai.optimal_param)
 
-		ai.predict(ai.optimal_space,ai.min_impurity_decrease)
-		##ai.optimal_model.vizModel("graph.pdf",None)
-		if len(ds.ovlist) != 0:
-			ai.optimal_model.vizModel(odir+"/ctree_opt.pdf",ai.optimal_features,ds.ovlist)
-			ai.model.vizModel(odir+"/ctree.pdf",ai.optimal_features,ds.ovlist)
-		else:
-			ai.optimal_model.vizModel(odir+"/ctree.pdf",ai.optimal_features)
+	def save(self,oPath):
+		os.makedirs(oPath,exist_ok=True)
+		self.ai.optimal_model.visualize()
+		self.ai.optimal_model.save(oPath)
+		self.ai.pred.save(oPath)
 
+		ai=self.ai.getAI(self.ai.optimal_space)
+		with open("%s/alphabetIndex.csv"%(oPath),"w") as f:
+			writer = csv.writer(f)
+			writer.writerow(["type","variable","alphabet","index"])
+			for dat in ai:
+				for line in dat[2]:
+					writer.writerow([dat[0],dat[1],line[0],line[1]])
 
-#"""
-##########
-# entry point
-argv=sys.argv
-if not ( len(argv)==2 or len(argv)==3 ):
-	print("m2bonsai.py ")
-	print("%s 設定ファイル(json)"%argv[0])
-	exit()
+if __name__ == '__main__':
+	#import json
+	#configFile="bonfig/config_yakir.json"
+	#with open(configFile, 'r') as rp:
+	#	config = json.load(rp)
+	#config=importlib.import_module(os.path.basename(configFile).replace(".py",""))
+	#configFile="bonfig_ctd.py"
 
-# configファイルの読み込み
-#import importlib
-#configFile=os.path.expanduser(argv[1])
-#sys.path.append(os.path.dirname(configFile))
-#config=importlib.import_module(os.path.basename(configFile).replace(".py",""))
+	params={
+		"max_depth":10
+	}
+	configF="bonfig/config_crx.py"
 
-configFile=os.path.expanduser(argv[1])
+	model=mcarm(configF)
+	model.build(params,n_calls=20)
+	model.predict()
+	model.save("xxbon_crx")
 
-if len(argv) > 2:
-	if argv[2] == "-usingJSON" :
-		import json
-		with open(configFile, 'r') as rp:
-			config = json.load(rp)
-	else:
-		import yaml
-		with open(configFile, 'r') as rp:
-			config = yaml.load(rp)
-
-else:
-	import yaml
-	with open(configFile, 'r') as rp:
-		config = yaml.load(rp)
-
-	
-checkConfig(config)
-
-odir = config["oPath"]
-
-ds=dataset(config["dataset"])
-ai=AlphabetIndex()
-ai.setSpaces(ds)
-ai.optimize()
-
-mkDir(odir)
-
-ai.predict(ai.optimal_space,ai.min_impurity_decrease)
-##ai.optimal_model.vizModel("graph.pdf",None)
-if len(ds.ovlist) != 0:
-	ai.optimal_model.vizModel(odir+"/ctree_opt.pdf",ai.optimal_features,ds.ovlist)
-	ai.model.vizModel(odir+"/ctree.pdf",ai.optimal_features,ds.ovlist)
-else:
-	ai.optimal_model.vizModel(odir+"/ctree.pdf",ai.optimal_features)
-
-
-exit()
-#"""

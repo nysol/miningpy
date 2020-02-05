@@ -2,7 +2,7 @@
 	"dataset": { 
 		"idFld":"id",
 		"iFile":{
-			"name":"yaki.csv",
+			"name":"data/yaki.csv",
 			"cFlds":["お茶漬け","カルビ","タン","キモ"],
 			"yFld":"wine",
 			"yType":"c"
