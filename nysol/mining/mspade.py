@@ -810,7 +810,7 @@ class Spade:
 
 		# 出力
 		#if "rule" in oParams:
-		if oParams["rule"]:
+		if "rule" in oParams and oParams["rule"]:
 			pass
 
 		else:
