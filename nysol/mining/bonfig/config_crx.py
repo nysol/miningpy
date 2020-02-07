@@ -53,7 +53,7 @@ dataset={
 				"maxLen":3,        # パターンを構成する総エレメント数の上限
 				"minGap":None,     # エレメント間最小ギャップ長
 				"maxGap":None,     # エレメント間最大ギャップ長
-				"maxWin":4         # 全体のマッチ幅最大長
+				"maxWin":None      # 全体のマッチ幅最大長
 			},
 			"oParams":{
 				"maximal":False,     # 極大パターンのみ選択
@@ -61,10 +61,7 @@ dataset={
 				"minSize":None,      # maxSizeの最小版
 				"minLen":None,       # maxLenの最小版
 				"maxSup":None,       # minSupの最大版
-				"minPprob":0.7,      # 最小事後確率
-				"oPats":"xxoutPats",   # パターン出力ファイル(Noneで出力しない)
-				"oStats":"xxoutStats", # 統計量出力ファイル(Noneで出力しない)
-				"oOccs":"xxoutOccs"    # 出現出力ファイル(Noneで出力しない)
+				"minPprob":None,      # 最小事後確率
 			}
 		},
 		{
@@ -78,7 +75,7 @@ dataset={
 				"maxLen":3,        # パターンを構成する総エレメント数の上限
 				"minGap":None,     # エレメント間最小ギャップ長
 				"maxGap":None,     # エレメント間最大ギャップ長
-				"maxWin":4         # 全体のマッチ幅最大長
+				"maxWin":None      # 全体のマッチ幅最大長
 			},
 			"oParams":{
 				"maximal":False,     # 極大パターンのみ選択
@@ -86,10 +83,7 @@ dataset={
 				"minSize":None,      # maxSizeの最小版
 				"minLen":None,       # maxLenの最小版
 				"maxSup":None,       # minSupの最大版
-				"minPprob":0.7,      # 最小事後確率
-				"oPats":"xxoutPats",   # パターン出力ファイル(Noneで出力しない)
-				"oStats":"xxoutStats", # 統計量出力ファイル(Noneで出力しない)
-				"oOccs":"xxoutOccs"    # 出現出力ファイル(Noneで出力しない)
+				"minPprob":None,      # 最小事後確率
 			}
 		}
 	]
