@@ -167,7 +167,9 @@ class ctree(object):
 			f.write(self.tree_text.encode("utf-8"))
 
 		if self.tree_chart:
-			self.tree_chart.write_png("%s/tree.png"%(oPath))
+			# png,pdfはgraphvizのversionによって動かないのでsvgでいく
+			self.tree_chart.write_svg("%s/tree.svg"%(oPath))
+			#self.tree_chart.write_png("%s/tree.png"%(oPath))
 			#self.tree_chart.write_pdf("%s/tree.pdf"%(oPath))
 
 	def visualize(self):#,oFile,features=None,classes=None):

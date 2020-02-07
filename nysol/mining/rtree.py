@@ -130,7 +130,7 @@ class rtree(object):
 			f.write(self.tree_text.encode("utf-8"))
 
 		if self.tree_chart:
-			self.tree_chart.write_png("%s/tree.png"%(oPath))
+			self.tree_chart.write_svg("%s/tree.svg"%(oPath))
 
 	def visualize(self):
 		print("##MSG: visualizing ...")
