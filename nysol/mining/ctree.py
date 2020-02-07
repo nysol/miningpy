@@ -48,7 +48,7 @@ class ctree(object):
 		self.y01=np.array([str2num[v] for v in y_df[self.yName].values])
 		self.y=y_df.values.reshape((-1,))
 
-		self.xNames=x_df.columns.to_list()
+		self.xNames=list(x_df.columns)
 		self.x=x_df.values.reshape((-1,len(x_df.columns)))
 
 		# クラスサイズ最小値が10以下ならcross validationできないことを判定させるため=>build()の最初で利用
@@ -127,11 +127,11 @@ class ctree(object):
 
 		# id込みのDataFrameに変換
 		y_pred=pd.DataFrame(y_pred)
-		y_pred.index=x_df.index.to_list()
+		y_pred.index=x_df.index #.to_list()
 		y_pred.columns=["y_predicted"]
 
 		y_prob=pd.DataFrame(y_prob)
-		y_prob.index=x_df.index.to_list()
+		y_prob.index=x_df.index #.to_list()
 		names=[]
 		for c in orderedLabels:
 			names.append("prob_"+str(c))
@@ -148,7 +148,7 @@ class ctree(object):
 		pred.y_pred=self.model.predict(x)
 		pred.y_prob=self.model.predict_proba(x)
 		pred.probClassOrder=self.model.classes_ # y_probの出力順
-		pred.id=x_df.index.to_list()
+		pred.id=x_df.index #.to_list()
 		pred.labels=self.labels
 		return pred
 
@@ -311,7 +311,7 @@ if __name__ == '__main__':
 	df,ds=csv2df(iFile,"id",["n1","n2","n3","n4"],["class"],["d1","d2","d3","i1","i2"])
 
 	yName="class"
-	xNames=ds.columns.to_list()
+	xNames=list(ds.columns) #.to_list()
 	xNames.remove(yName)
 	crx_y=pd.DataFrame(ds.loc[:,yName])
 	crx_x=ds.loc[:,xNames]
