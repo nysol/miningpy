@@ -7,6 +7,7 @@ import pandas as pd
 import pickle
 import copy
 import csv
+from datetime import datetime
 import tempfile
 import nysol.mining.mspade as mm
 from nysol.util.mmkdir import mkDir
@@ -102,6 +103,7 @@ class AlphabetIndex(object):
 				print(dat[1],"".join([str(v[1]) for v in dat[2]]))
 			else:
 				print(dat[1],",".join([str(v[0])+"="+str(v[1]) for v in dat[2]]))
+				print("time:",datetime.now())
 
 	def enumSeqpatterns(self,name,data,eParams,oParams) :
 		datas={name:data}
