@@ -428,8 +428,8 @@ if __name__ == '__main__':
 		pred.evaluate(ds.y)
 		pred.save(oPath)
 
-	#run_example("bonfig_ctd.py","xxbon_ctd")
-	#run_example("bonfig/config_crx.py","xxbon_crx")
+	#run_example("bonfig_ctd.py","xxbon_ctd",10,10)
+	run_example("bonfig/config_crx.py","xxbon_crx",10,10)
 	#run_example("bonfig/config_crx_seq.py","xxbon_crx_seq",50,20)
-	run_relearn("bonfig/config_crx_seq.py","xxbon_crx_seq",50)
+	#run_relearn("bonfig/config_crx_seq.py","xxbon_crx_seq",50)
 

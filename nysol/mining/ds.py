@@ -278,7 +278,7 @@ class dataset(object):
 				smp=[]
 				for v in self.tblFile_iFlds:
 					smp.append(line[v])
-				items.append(smp)
+				_items.append(smp)
 
 		### List => pd.DataFrame
 		self.sampleSize=len(self.y)
