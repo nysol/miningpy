@@ -160,9 +160,9 @@ class Sequence(object):
 		self.eParams=config["eParams"]
 		self.oParams=config["oParams"]
 		self.tempDir=tempfile.TemporaryDirectory()
-		self.oParams["oPats"]="%s/xxpats"%(self.tempDir.name)
+		self.oParams["oPats"] ="%s/xxpats" %(self.tempDir.name)
 		self.oParams["oStats"]="%s/xxstats"%(self.tempDir.name)
-		self.oParams["oOccs"]=None
+		self.oParams["oOccs"] ="%s/xxoccs" %(self.tempDir.name)
 		self.alpha2num=set([])
 		self.num2alpha=[]
 		self.data=[]

@@ -110,6 +110,8 @@ class AlphabetIndex(object):
 		iParams={"iData":datas }
 		spade=mm.Spade(iParams,eParams,oParams)
 		rules=spade.run()
+		#print("########################")
+		#print(rules)
 		return rules
 
 	# bayes最適化で選ばれたalphabet-indexパラメータspacesに基づいて、
@@ -284,7 +286,7 @@ class AlphabetIndex(object):
 		#print(self.x)
 		#print(self.ds.y)
 		self.model.setDataset(x,self.ds.y)
-		self.model.build(self.params,visualizing=False)
+		self.model.build(self.params,visualizing=True)
 
 		##4. スコアを返す(-1を返すのはbayes最適化が最小化のため)
 		score=self.model.score
@@ -297,11 +299,12 @@ class AlphabetIndex(object):
 			self.optimal_param = self.model.opt_param
 			for seq in self.ds.sequences:
 				name=seq.name.replace("/","_").replace(".","")
-				os.system("cp %s %s/seq_patterns_%s.csv"%(seq.oParams["oPats"],self.seq_tempDir.name,name))
-				os.system("cp %s %s/seq_stats_%s.csv"%(seq.oParams["oStats"],self.seq_tempDir.name,name))
-			#print(self.optimal_model.tree_text)
-			#print(self.optimal_space)
-			#print("-------------")
+				os.system("cp %s %s/seq_patterns_%s.csv"%(seq.oParams["oPats"] ,self.seq_tempDir.name,name))
+				os.system("cp %s %s/seq_stats_%s.csv"   %(seq.oParams["oStats"],self.seq_tempDir.name,name))
+				os.system("cp %s %s/seq_occs_%s.csv"    %(seq.oParams["oOccs"] ,self.seq_tempDir.name,name))
+			print(self.optimal_model.tree_text)
+			print(self.optimal_space)
+			print("-------------")
 		return (-1)*score
 
 	# optimal_space,optimal_modelで予測
@@ -380,8 +383,9 @@ class mcarm(object):
 		model.seq_tempDir=tempfile.TemporaryDirectory()
 		for seq in model.ds.sequences:
 			seq.tempDir=tempfile.TemporaryDirectory()
-			seq.oParams["oPats"]="%s/xxpats"%(seq.tempDir.name)
+			seq.oParams["oPats"] ="%s/xxpats" %(seq.tempDir.name)
 			seq.oParams["oStats"]="%s/xxstats"%(seq.tempDir.name)
+			seq.oParams["oOccs"] ="%s/xxoccs" %(seq.tempDir.name)
 		return model
 
 	def save(self,oPath):
@@ -431,7 +435,7 @@ if __name__ == '__main__':
 		pred.save(oPath)
 
 	#run_example("bonfig_ctd.py","xxbon_ctd",10,10)
-	run_example("bonfig/config_crx.py","xxbon_crx",10,10)
-	#run_example("bonfig/config_crx_seq.py","xxbon_crx_seq",50,20)
+	#run_example("bonfig/config_crx.py","xxbon_crx",10,10)
+	run_example("bonfig/config_crx_seq.py","xxbon_crx_seq",200,200)
 	#run_relearn("bonfig/config_crx_seq.py","xxbon_crx_seq",50)
 
