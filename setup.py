@@ -108,7 +108,7 @@ NYSOL runs in UNIX environment (Linux and Mac OS X, not Windows).
       #	  "psutil"
 	    #],
 			scripts=[
-				'scripts/mgfeatures.py','scripts/mgnfeatures.py',
+				'scripts/mgfeatures.py','scripts/mgnfeatures.py','scripts/mgpmetis.py',
 				'scripts/mspade.py','scripts/mcarm.py','scripts/msketchsort.py' 
 				],
 			ext_modules =[skmod]
