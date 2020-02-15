@@ -316,6 +316,8 @@ write.csv(dat,file="{oFile}",quote=FALSE,row.names=FALSE)
 		else:
 			os.system("R --vanilla -q --slave < %s 2>/dev/null "%(xxscp))
 
+		nm.msetstr(v=name , a="id",i=xxout).mcut(x=True,f="0L,0-1L",o=self.oPath+"/"+name+".csv").run()
+
 
 	# ============
 	# entry point
