@@ -6,8 +6,7 @@ import shutil
 import nysol.mcmd as nm
 import nysol.util as nu
 import nysol.util.margs as margs
-import nysol.util.mtemp as mtemp
-from nysol.mining import extcore as extMining
+
 from nysol.util.mtemp import Mtemp
 from nysol.util.mmkdir import mkDir
 from nysol.util.mparallel import meach as meach
@@ -277,7 +276,7 @@ write.csv(dat,file="{oFile}",quote=FALSE,row.names=FALSE)
 		# isolated nodes are set to the end of position in mapping file.
 		# S= must start from 0 (but inside R vertex number will be added one)
 		f <<= nm.mnumber(s="flag,node",a="num",S=0,o=mapFile)
-		f.run(msg="on")
+		f.run()
 
 		f = None 
 		f <<= nm.mcut(f=[ef1,ef2] , i=ei)
@@ -288,7 +287,7 @@ write.csv(dat,file="{oFile}",quote=FALSE,row.names=FALSE)
 		f <<= nm.msortf(f="num1%n,num2%n",nfno=True)
 		f <<= nm.cmd("tr ',' ' ' " )
 		f <<= nm.mwrite(o=numFile)
-		f.run(msg="on")
+		f.run()
 
 		nodeSize=mrecount(i=mapFile)
 
@@ -302,11 +301,6 @@ write.csv(dat,file="{oFile}",quote=FALSE,row.names=FALSE)
 		nodeFile=re.sub('\.edge$',".node",edgeFile)
 
 		# convert the original graph to one igraph can handle
-		#wf=MCMD::Mtemp.new
-		#xxnum=wf.file
-		#xxmap=wf.file
-		#xxout=wf.file
-		#xxscp=wf.file
 		temp=Mtemp()
 		xxnum = temp.file()
 		xxmap = temp.file()
@@ -333,5 +327,8 @@ write.csv(dat,file="{oFile}",quote=FALSE,row.names=FALSE)
 				os.environ['KG_ScpVerboseLevel'] = "4"
 
 
-		meach(self.runmain,self.edgeFiles,mpCount=8)
+		meach(self.runmain,self.edgeFiles,mpCount=self.MP)
+
+
+		nu.mmsg.endLog(self.__cmdline())
 
