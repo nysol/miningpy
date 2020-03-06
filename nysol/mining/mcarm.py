@@ -302,6 +302,11 @@ class AlphabetIndex(object):
 				os.system("cp %s %s/seq_patterns_%s.csv"%(seq.oParams["oPats"] ,self.seq_tempDir.name,name))
 				os.system("cp %s %s/seq_stats_%s.csv"   %(seq.oParams["oStats"],self.seq_tempDir.name,name))
 				os.system("cp %s %s/seq_occs_%s.csv"    %(seq.oParams["oOccs"] ,self.seq_tempDir.name,name))
+
+			## predict関数は未実装なので、ここで予測しておく(将来要変更)
+			self.optimal_pred=self.optimal_model.predict(x)
+			self.optimal_pred.evaluate(self.ds.y)
+
 			print(self.optimal_model.tree_text)
 			print(self.optimal_space)
 			print("-------------")
@@ -399,6 +404,9 @@ class mcarm(object):
 		with open(oFile, 'wb') as fpw:
 			pickle.dump(self, fpw)
 
+		# これは将来分離させる
+		self.ai.optimal_pred.save(oPath)
+
 if __name__ == '__main__':
 	from nysol.mining.ds import dataset 
 	def run_example(configF,oPath,n_calls,n_random_starts):
@@ -413,9 +421,9 @@ if __name__ == '__main__':
 		model.build(modelFunc,params,n_calls=n_calls,n_random_starts=n_random_starts)
 		model.save(oPath)
 
-		pred=model.predict(ds)
-		pred.evaluate(ds.y)
-		pred.save(oPath)
+		#pred=model.predict(ds)
+		#pred.evaluate(ds.y)
+		#pred.save(oPath)
 
 	def run_relearn(configF,oPath,n_calls):
 		ds=dataset(configF)
@@ -430,9 +438,9 @@ if __name__ == '__main__':
 		model.build(modelFunc,params,n_calls=n_calls) # 再学習
 		model.save(oPath)
 
-		pred=model.predict(ds)
-		pred.evaluate(ds.y)
-		pred.save(oPath)
+		#pred=model.predict(ds)
+		#pred.evaluate(ds.y)
+		#pred.save(oPath)
 
 	#run_example("bonfig_ctd.py","xxbon_ctd",10,10)
 	#run_example("bonfig/config_crx.py","xxbon_crx",10,10)

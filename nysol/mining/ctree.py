@@ -117,6 +117,7 @@ class ctree(object):
 	def predict(self,x_df):
 		x=x_df.values.reshape((-1,len(x_df.columns)))
 
+		#print("x.shape=",x.shape,self.model.ds.x.shape)
 		y_pred=self.model.predict(x) # [0 0 0 0 0 0 0 ...] # pred class表
 		y_prob=self.model.predict_proba(x) # sample * class prob 表
 		# [[9.86925146e-01 1.30748490e-02 5.13506829e-09]
