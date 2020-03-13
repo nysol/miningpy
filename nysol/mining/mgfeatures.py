@@ -190,7 +190,7 @@ dat1,10,10,0,2.85714285714286,3,1,4,0.476190476190476,0.409090909090909,1.619047
 				if v == True :
 					cmdline += " -" + str(k)
 			else:
-				cmdline += " " + str(k) + "=" + str(k)
+				cmdline += " " + str(k) + "=" + str(v)
 		return cmdline 
 
 	def __init__(self,**kwd):

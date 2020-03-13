@@ -194,7 +194,7 @@ h,1,1,0,0.0588235294117647,0.0546408203637134
 				if v == True :
 					cmdline += " -" + str(k)
 			else:
-				cmdline += " " + str(k) + "=" + str(k)
+				cmdline += " " + str(k) + "=" + str(v)
 		return cmdline 
 
 	def __init__(self,**kwd):
