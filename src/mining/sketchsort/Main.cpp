@@ -63,6 +63,17 @@ int main(int argc, char **argv)
 
 
 int sketchsort_main (int argc, char **argv){
+	centering    = false;
+	hamDist      = 1;
+	numblocks    = 4;
+	numchunks    = 3;
+	cosDist      = 0.01;
+	autoFlag     = false;
+	missingratio = 0.0001;
+	centering    = false;
+	windowsize   = 0;
+	seed         = 1;
+
 
   parse_parameters(argc, argv);
 
@@ -107,6 +118,7 @@ void usage(){
 void parse_parameters (int argc, char **argv){
   if (argc == 1) usage();
   int argno;
+
   for (argno = 1; argno < argc; argno++){
     if (argv[argno][0] == '-'){
       if      (!strcmp (argv[argno], "-version")){

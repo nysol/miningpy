@@ -148,17 +148,49 @@ distance,eCode,tgdate,eCode2,tgdate2
 		self.msgoff = True
 		self.oFile  = kwd["o"] if "o" in kwd else None
 		self.iFile  = kwd["i"] if "i" in kwd else None
-		self.elem   = kwd["e"] if "e" in kwd else None
-		self.tidH   = kwd["tid"].split(",") if "tid"   in kwd else None
-		self.tid    = kwd["tid"] if "tid" in kwd else None
+
+		if "e" in kwd :
+			if isinstance(kwd["e"],list) :
+				self.elem = kwd["e"]
+			elif isinstance(kwd["e"],str) :
+				self.elem   = kwd["e"].split(",")
+			else:
+				raise( Exception("can't use type : kwd e : {} ".format(kwd["e"].__name__) ) )
+		else:
+			self.elem =[]
+
+		if "tid" in kwd :
+			if isinstance(kwd["tid"],list) :
+				self.tidH = kwd["tid"]
+			elif isinstance(kwd["tid"],str) :
+				self.tidH   = kwd["tid"].split(",")
+			else:
+				raise( Exception("can't use type : kwd tid : {} ".format(kwd["tid"].__name__) ) )
+		else:
+			self.tidH =[]
+
+
 		self.dist   = kwd["dist"] if "dist" in kwd else "C"
 		self.th     = float(kwd["th"]) if "th" in kwd else 0.01
 		self.mr     = float(kwd["mr"]) if "mr" in kwd else 0.00001
+
 		self.wfH   = kwd["wf"].split(",") if "wf" in kwd else None
-		self.wf    = kwd["wf"] if "wf" in kwd else None
+
+		if "wf" in kwd :
+			if isinstance(kwd["wf"],list) :
+				self.wfH = kwd["wf"]
+			elif isinstance(kwd["wf"],str) :
+				self.wfH   = kwd["wf"].split(",")
+			else:
+				raise( Exception("can't use type : kwd tid : {} ".format(kwd["tid"].__name__) ) )
+		else:
+			self.wfH = None
+
 		self.ws    = int(kwd["ws"]) if "ws" in kwd else 0
 		self.seed  = int(kwd["seed"]) if "seed" in kwd else 1
 		self.uc    = kwd["uc"] if "uc" in kwd else False
+
+
 
 		import time
 		self.pt = int(time.time())
@@ -207,14 +239,14 @@ distance,eCode,tgdate,eCode2,tgdate2
 		# mkdata
 		xx1 =  nm.mnumber(S=0,a=ln,q=True,i=self.iFile)
 		if self.wfH :
-			xx2  = nm.mcut(f=self.wfH+self.tidH+[self.elem],i=xx1)
+			xx2  = nm.mcut(f=self.wfH+self.tidH+self.elem,i=xx1)
 		else:
 			self.wfH = ["{}wf".format(self.pt)]
 			xx2  =   nm.msetstr(v=0,a=self.wfH,i=xx1)
-			xx2  <<= nm.mcut(f=self.wfH+self.tidH+[self.elem])
+			xx2  <<= nm.mcut(f=self.wfH+self.tidH+self.elem)
 
 		fmap = nm.mcut(f=[ln]+self.tidH,i=xx1,o=xxmap)
-		xx2  <<= nm.mcut(f=self.wfH+[self.elem],nfno=True) 
+		xx2  <<= nm.mcut(f=self.wfH+self.elem,nfno=True) 
 		xx2 <<= nm.cmd("tr ',' ' '")
 		xx2 <<= nm.mwrite(o=sdata)
 		nm.runs([fmap,xx2])
@@ -227,18 +259,19 @@ distance,eCode,tgdate,eCode2,tgdate2
 		elif self.dist=="H" :
 			para["hamdist"] = self.th
 
+
 		if not self.uc :
 			para["centering"] = True 
 			
 		para["auto"] = True 
 		para["windowsize"] = self.ws
 		para["seed"] = self.seed
+		para["missingratio"] = self.mr
 		para["i"] = sdata
 		para["o"] = outf
 		status = extMining.sketchsort(para)		
 		if status: 
 			raise Exception("#ERROR# checking sketchsort messages")
-
 		tmp=[]
 		for val in self.tidH :
 	 	  tmp.append("{}:{}2".format(val,val))
@@ -249,11 +282,11 @@ distance,eCode,tgdate,eCode2,tgdate2
 		f <<= nm.mcut(nfni=True,f="0:eline1,1:eline2,2:distance")
 		f <<= nm.mfsort(f="eline*")
 	  # 行番号に対応するtidを取得
-		f <<= nm.mjoin(k="eline1",K="{}line".format(self.pt),f=self.tid,m=xxmap)
+		f <<= nm.mjoin(k="eline1",K="{}line".format(self.pt),f=self.tidH,m=xxmap)
 		f <<= nm.mjoin(k="eline2",K="{}line".format(self.pt),f=tid2,m=xxmap)
 		f <<= nm.msortf(f="eline1%n,eline2%n")
 		f <<= nm.mcut(r=True,f="eline1,eline2")
-		f <<= nm.msortf(f=self.tid)
+		f <<= nm.msortf(f=self.tidH)
 		f <<= nm.mfldname(q=True,o=self.oFile)
 		f.run()
 		nu.mmsg.endLog(self.__cmdline())
