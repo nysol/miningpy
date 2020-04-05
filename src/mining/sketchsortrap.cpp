@@ -55,7 +55,6 @@ PyObject* sketchsort_run(PyObject* self, PyObject* args){
 		PyErr_Print();
 		return PyLong_FromLong(3);
 	}
-
 	vv[0] = "sketchsort";
 	Py_ssize_t i;
 	for(i=0 ; i< psize;i++){

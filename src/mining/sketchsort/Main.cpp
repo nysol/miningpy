@@ -63,6 +63,7 @@ int main(int argc, char **argv)
 
 
 int sketchsort_main (int argc, char **argv){
+	// run前に初期化し直す
 	centering    = false;
 	hamDist      = 1;
 	numblocks    = 4;
@@ -74,9 +75,7 @@ int sketchsort_main (int argc, char **argv){
 	windowsize   = 0;
 	seed         = 1;
 
-
   parse_parameters(argc, argv);
-
   SketchSort sketchsort;
   sketchsort.run(fname, oname, numblocks, hamDist, cosDist, numchunks, autoFlag, missingratio, centering, windowsize, seed);
 
