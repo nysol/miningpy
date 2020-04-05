@@ -64,6 +64,8 @@ int main(int argc, char **argv)
 
 int sketchsort_main (int argc, char **argv){
 	// run前に初期化し直す
+	fname = NULL;
+	oname = NULL;
 	centering    = false;
 	hamDist      = 1;
 	numblocks    = 4;
